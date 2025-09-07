@@ -46,6 +46,9 @@
     </div>
   </div>
 
+  <!-- Alert Manager -->
+  <app-alert-manager></app-alert-manager>
+
   <!-- Statistics -->
   <div class="stats-section">
     <div class="stat-card">
@@ -62,7 +65,7 @@
     </div>
   </div>
 
-  <!-- Aggiungi questa sezione dopo le statistics -->
+  <!-- Charts -->
   <div class="charts-section">
     <app-price-chart 
       *ngIf="btcPriceHistory().length > 0"
@@ -80,7 +83,7 @@
       symbol="ETH/USDT">
     </app-price-chart>
   </div>
-  
+
   <!-- Tickers Table -->
   <div class="table-section">
     <h3>MiniTicker Data ({{ symbolsInput }})</h3>

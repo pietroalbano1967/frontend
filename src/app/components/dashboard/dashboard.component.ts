@@ -1,21 +1,25 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, signal, inject, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import  { MiniTicker, WebSocketMessage } from './../../types/binance.types';
-import { BinanceApiService, } from '../../services/binance-api.service';
+import { MiniTicker, WebSocketMessage } from './../../types/binance.types';
+import { BinanceApiService } from '../../services/binance-api.service';
 import { PriceChartComponent } from '../chart/chart.component';
+import { AlertManagerComponent } from '../alert-manager/alert-manager.component';
+import { AlertService } from '../../services/alert.service';
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [CommonModule, HttpClientModule, FormsModule, PriceChartComponent],
+  imports: [CommonModule, HttpClientModule, FormsModule, PriceChartComponent, AlertManagerComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  constructor(private api: BinanceApiService) {}
+  private api = inject(BinanceApiService);
+  private alertService = inject(AlertService);
+  private isBrowser: boolean;
   
   symbolsInput = 'btcusdt,ethusdt';
   wsOpen = false;
@@ -25,12 +29,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   lastUpdate: Date | null = null;
   miniTickers = signal<MiniTicker[]>([]);
   
-  // Aggiungi queste nuove signals per i grafici
   btcPriceHistory = signal<number[]>([]);
   ethPriceHistory = signal<number[]>([]);
   chartLabels = signal<string[]>([]);
   
   private wsSubscription: Subscription | null = null;
+
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   ngOnInit() {
     this.refresh();
@@ -106,8 +113,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       };
       this.miniTickers.set(updatedTickers);
       
-      // Aggiorna i dati per il grafico
       this.updateChartData(newData);
+      this.checkPriceAlerts(newData);
     } else {
       this.miniTickers.set([...currentTickers, newData]);
     }
@@ -117,14 +124,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const now = new Date();
     const timeLabel = now.toLocaleTimeString();
     
-    // Aggiorna le labels
     if (this.chartLabels().length >= 20) {
       this.chartLabels.set([...this.chartLabels().slice(1), timeLabel]);
     } else {
       this.chartLabels.set([...this.chartLabels(), timeLabel]);
     }
     
-    // Aggiorna i dati del prezzo in base al simbolo
     if (ticker.symbol === 'btcusdt') {
       if (this.btcPriceHistory().length >= 20) {
         this.btcPriceHistory.set([...this.btcPriceHistory().slice(1), ticker.last_price]);
@@ -139,6 +144,65 @@ export class DashboardComponent implements OnInit, OnDestroy {
       } else {
         this.ethPriceHistory.set([...this.ethPriceHistory(), ticker.last_price]);
       }
+    }
+  }
+
+  private checkPriceAlerts(ticker: MiniTicker) {
+    const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
+    
+    triggeredAlerts.forEach(alert => {
+      this.showAlertNotification(alert, ticker.last_price);
+    });
+  }
+
+  private showAlertNotification(alert: any, currentPrice: number) {
+    // Solo nel browser
+    if (!this.isBrowser) return;
+    
+    const message = `🚨 ${alert.symbol} ${alert.condition === 'above' ? 'supera' : 'scende sotto'} $${alert.price}!
+Prezzo attuale: $${currentPrice}`;
+    
+    // Notifiche browser
+    if (typeof Notification !== 'undefined') {
+      if (Notification.permission === 'granted') {
+        new Notification('Alert Prezzo Attivato!', { body: message });
+      } else if (Notification.permission !== 'denied') {
+        // Richiedi il permesso se non è stato ancora fatto
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('Alert Prezzo Attivato!', { body: message });
+          }
+        });
+      }
+    }
+    
+    console.log('ALERT ATTIVATO:', message);
+    this.playAlertSound();
+  }
+
+  private playAlertSound() {
+    // Solo nel browser
+    if (!this.isBrowser) return;
+    
+    try {
+      // Tentativo di riprodurre un suono
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      // Fallback al beep della console
+      console.log('\u0007');
     }
   }
 
