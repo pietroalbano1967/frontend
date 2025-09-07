@@ -338,3 +338,27 @@
     color: #856404;
   }
 }
+// Stili aggiuntivi
+.symbols-info {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  
+  .active-symbols {
+    color: #1976d2;
+    font-weight: 500;
+  }
+  
+  .symbols-count {
+    color: #6c757d;
+    font-size: 12px;
+  }
+}
+
+.controls-section {
+  // Mantieni gli stili esistenti e aggiungi:
+  .buttons-group {
+    justify-content: flex-start;
+  }
+}

@@ -1,7 +1,20 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, Subject, map, shareReplay } from 'rxjs';
-import { MiniTicker, WebSocketMessage } from '../types/binance.types';
+import { Observable, Subject, map, shareReplay, of } from 'rxjs';
+
+export interface MiniTicker {
+  symbol: string;
+  event_time: number;
+  last_price: number;
+  high_price: number;
+  low_price: number;
+  volume: number;
+}
+
+export interface WebSocketMessage {
+  type: string;
+  payload: any;
+}
 
 @Injectable({ providedIn: 'root' })
 export class BinanceApiService {
@@ -11,9 +24,21 @@ export class BinanceApiService {
   private wsSubject = new Subject<WebSocketMessage>();
 
   connectWS(symbols = 'btcusdt,ethusdt', types = 'miniTicker,kline_1m'): Observable<WebSocketMessage> {
+    // Filtra simboli vuoti
+    const validSymbols = symbols.split(',').filter(symbol => symbol.trim().length > 0);
+    
+    if (validSymbols.length === 0) {
+      // Restituisci un Observable vuoto invece di undefined
+      return new Observable<WebSocketMessage>(subscriber => {
+        // Completa immediatamente l'Observable senza emettere valori
+        subscriber.complete();
+      });
+    }
+    
     if (this.ws) this.ws.close();
     
-    const url = `${this.baseUrl.replace('http','ws')}/api/market/ws/stream?symbols=${encodeURIComponent(symbols)}&types=${encodeURIComponent(types)}`;
+    const symbolsString = validSymbols.join(',');
+    const url = `${this.baseUrl.replace('http','ws')}/api/market/ws/stream?symbols=${encodeURIComponent(symbolsString)}&types=${encodeURIComponent(types)}`;
     this.ws = new WebSocket(url);
     
     this.ws.onopen = () => console.log('WS open');
@@ -34,7 +59,13 @@ export class BinanceApiService {
   }
 
   latestMini(symbols: string[]): Observable<MiniTicker[]> {
-    const params = new HttpParams({ fromObject: { symbol: symbols } });
+    // Filtra simboli vuoti
+    const validSymbols = symbols.filter(symbol => symbol.trim().length > 0);
+    if (validSymbols.length === 0) {
+      return of([]);
+    }
+    
+    const params = new HttpParams({ fromObject: { symbol: validSymbols } });
     return this.http.get<MiniTicker[]>(`${this.baseUrl}/api/market/mini/latest`, { params })
       .pipe(map(arr => arr.sort((a, b) => a.symbol.localeCompare(b.symbol))));
   }
@@ -47,8 +78,23 @@ export class BinanceApiService {
     return this.http.get<string[]>(`${this.baseUrl}/api/market/tickers`);
   }
 
-  
-getHistoricalData(symbol: string, interval: string = '1m', limit: number = 50): Observable<any[]> {
-  return this.http.get<any[]>(`${this.baseUrl}/api/market/historical/${symbol}?interval=${interval}&limit=${limit}`);
-}
+  getHistoricalData(symbol: string, interval: string = '1m', limit: number = 50): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/api/market/historical/${symbol}?interval=${interval}&limit=${limit}`);
+  }
+
+  getPopularSymbols(): string[] {
+    return [
+      'btcusdt', 'ethusdt', 'bnbusdt', 'solusdt', 'adausdt',
+      'xrpusdt', 'dogeusdt', 'maticusdt', 'dotusdt', 'avaxusdt',
+      'linkusdt', 'ltcusdt', 'atomusdt', 'etcusdt', 'xlmusdt',
+      'icpusdt', 'filusdt', 'hbarusdt', 'nearusdt', 'uniusdt'
+    ];
+  }
+
+  searchSymbols(query: string): string[] {
+    const allSymbols = this.getPopularSymbols();
+    return allSymbols.filter(symbol => 
+      symbol.toLowerCase().includes(query.toLowerCase())
+    );
+  }
 }

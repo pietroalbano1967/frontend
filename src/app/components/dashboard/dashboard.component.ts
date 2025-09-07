@@ -8,11 +8,21 @@ import { BinanceApiService } from '../../services/binance-api.service';
 import { PriceChartComponent } from '../chart/chart.component';
 import { AlertManagerComponent } from '../alert-manager/alert-manager.component';
 import { AlertService } from '../../services/alert.service';
+import { SymbolSelectorComponent } from '../symbol-selector/symbol-selector.component';
+import { MiniTickerTableComponent } from '../mini-ticker-table/mini-ticker-table.component'; // ← Aggiungi questo
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [CommonModule, HttpClientModule, FormsModule, PriceChartComponent, AlertManagerComponent],
+  imports: [
+    CommonModule, 
+    HttpClientModule, 
+    FormsModule, 
+    PriceChartComponent, 
+    AlertManagerComponent,
+    SymbolSelectorComponent,
+    MiniTickerTableComponent  // ← Aggiungi questo
+  ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -48,31 +58,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   start() {
-    this.isConnecting = true;
-    
-    this.wsSubscription = this.api.connectWS(this.symbolsInput, 'miniTicker,kline_1m').subscribe({
-      next: (msg: WebSocketMessage) => {
-        this.wsOpen = true;
-        this.isConnecting = false;
-        this.messagesReceived++;
-        this.lastUpdate = new Date();
-        this.lastMsg = msg;
-        
-        if (msg?.type === 'miniTicker') {
-          this.updateTickerData(msg.payload as MiniTicker);
-        }
-      },
-      error: (err: Error) => {
-        console.error('WebSocket error:', err);
-        this.isConnecting = false;
-        this.wsOpen = false;
-      },
-      complete: () => {
-        this.isConnecting = false;
-        this.wsOpen = false;
-      }
-    });
+  // Controlla se ci sono simboli validi
+  const validSymbols = this.symbolsInput.split(',').filter(symbol => symbol.trim().length > 0);
+  if (validSymbols.length === 0) {
+    console.warn('Nessun simbolo valido selezionato');
+    return;
   }
+
+  this.isConnecting = true;
+  
+  this.wsSubscription = this.api.connectWS(this.symbolsInput, 'miniTicker,kline_1m').subscribe({
+    next: (msg: WebSocketMessage) => {
+      this.wsOpen = true;
+      this.isConnecting = false;
+      this.messagesReceived++;
+      this.lastUpdate = new Date();
+      this.lastMsg = msg;
+      
+      if (msg?.type === 'miniTicker') {
+        this.updateTickerData(msg.payload as MiniTicker);
+      }
+    },
+    error: (err: Error) => {
+      console.error('WebSocket error:', err);
+      this.isConnecting = false;
+      this.wsOpen = false;
+    },
+    complete: () => {
+      this.isConnecting = false;
+      this.wsOpen = false;
+    }
+  });
+}
 
   stop() {
     if (this.wsSubscription) {
@@ -205,9 +222,26 @@ Prezzo attuale: $${currentPrice}`;
       console.log('\u0007');
     }
   }
-
+// Aggiungi questo metodo
+  getActiveSymbolsCount(): number {
+    if (!this.symbolsInput) return 0;
+    return this.symbolsInput.split(',').filter(symbol => symbol.trim().length > 0).length;
+  }
   getPriceChange(ticker: MiniTicker): number {
     const midPrice = (ticker.high_price + ticker.low_price) / 2;
     return ticker.last_price - midPrice;
   }
+  // Aggiungi questo metodo
+  onSymbolsChange(symbolsString: string) {
+    this.symbolsInput = symbolsString;
+    // Riconnetti il WebSocket con i nuovi simboli
+    if (this.wsOpen) {
+      this.stop();
+      this.start();
+    }
+    // Aggiorna i dati
+    this.refresh();
+  }
+
+
 }

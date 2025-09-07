@@ -1,0 +1,163 @@
+.symbol-selector {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  
+  h4 {
+    margin: 0;
+    color: #2c3e50;
+  }
+}
+
+.quick-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+  }
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  
+  &:hover {
+    background: #f8f9fa;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.selected-symbols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+  min-height: 40px;
+}
+
+.symbol-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #1976d2;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    color: #d32f2f;
+  }
+}
+
+.no-symbols {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.popular-symbols {
+  h5 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 14px;
+  }
+}
+
+.popular-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.popular-tag {
+  padding: 4px 8px;
+  background: #f8f9fa;
+  color: #6c757d;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #e9ecef;
+    color: #2c3e50;
+  }
+  
+  &.selected {
+    background: #1976d2;
+    color: white;
+  }
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #6c757d;
+  
+  &:hover {
+    background: #f8f9fa;
+    border-color: #ccc;
+  }
+}

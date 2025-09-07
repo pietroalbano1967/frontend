@@ -1,0 +1,63 @@
+<div class="mini-ticker-table">
+  <div class="table-header">
+    <h3>{{ title }}</h3>
+    <div class="table-info">
+      <span class="symbols-count">{{ tickers.length }} simboli</span>
+      <span class="last-update" *ngIf="tickers.length > 0">
+        • Ultimo aggiornamento: {{ tickers[0]?.event_time | date:'HH:mm:ss' }}
+      </span>
+    </div>
+  </div>
+
+  <div class="table-container" *ngIf="tickers.length > 0">
+    <table class="ticker-table">
+      <thead>
+        <tr>
+          <th (click)="onSort('symbol')" class="sortable">
+            Symbol {{ getSortIcon('symbol') }}
+          </th>
+          <th (click)="onSort('last_price')" class="sortable">
+            Prezzo {{ getSortIcon('last_price') }}
+          </th>
+          <th (click)="onSort('high_price')" class="sortable">
+            24h High {{ getSortIcon('high_price') }}
+          </th>
+          <th (click)="onSort('low_price')" class="sortable">
+            24h Low {{ getSortIcon('low_price') }}
+          </th>
+          <th (click)="onSort('volume')" class="sortable">
+            Volume {{ getSortIcon('volume') }}
+          </th>
+          <th>Variaz.</th>
+          <th (click)="onSort('event_time')" class="sortable">
+            Ultimo Agg. {{ getSortIcon('event_time') }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ticker of sortedTickers" class="ticker-row">
+          <td class="symbol-cell">
+            <span class="symbol-badge">{{ ticker.symbol.toUpperCase() }}</span>
+          </td>
+          <td class="price-cell" 
+              [class.positive]="getPriceChange(ticker) > 0" 
+              [class.negative]="getPriceChange(ticker) < 0">
+            ${{ ticker.last_price | number:'1.2-2' }}
+          </td>
+          <td>${{ ticker.high_price | number:'1.2-2' }}</td>
+          <td>${{ ticker.low_price | number:'1.2-2' }}</td>
+          <td>{{ ticker.volume | number:'1.0-0' }}</td>
+          <td [class.positive]="getPriceChangePercent(ticker) > 0" 
+              [class.negative]="getPriceChangePercent(ticker) < 0">
+            {{ getPriceChangePercent(ticker) | number:'1.2-2' }}%
+          </td>
+          <td>{{ ticker.event_time | date:'HH:mm:ss' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="tickers.length === 0" class="no-data">
+    <p>Nessun dato disponibile. Seleziona dei simboli e connetti il WebSocket.</p>
+  </div>
+</div>

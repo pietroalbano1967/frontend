@@ -3,64 +3,61 @@
   <div class="header">
     <div class="header-left">
       <h1>Binance Bot Dashboard</h1>
-      <p class="subtitle">Real-time cryptocurrency market data</p>
+      <p class="subtitle">Monitoraggio Multi-Simbolo in Tempo Reale</p>
     </div>
     <div class="header-right">
       <div class="connection-status" [class.connected]="wsOpen">
         <span class="status-dot"></span>
-        {{ wsOpen ? 'CONNECTED' : 'DISCONNECTED' }}
+        {{ wsOpen ? 'CONNESSO' : 'DISCONNESSO' }}
       </div>
     </div>
   </div>
 
+  <!-- Symbol Selector -->
+  <app-symbol-selector (symbolsChange)="onSymbolsChange($event)"></app-symbol-selector>
+ <!-- Alert Manager -->
+  <app-alert-manager></app-alert-manager>
   <!-- Controls -->
   <div class="controls-section">
-    <div class="symbols-control">
-      <label for="symbols">Symbols:</label>
-      <input 
-        id="symbols" 
-        type="text" 
-        [(ngModel)]="symbolsInput" 
-        placeholder="btcusdt,ethusdt"
-        class="symbols-input"
-      >
+    <div class="symbols-info">
+      <strong>Simboli attivi:</strong> 
+      <span class="active-symbols">{{ symbolsInput || 'nessuno' }}</span>
+      • 
+      <span class="symbols-count">{{ getActiveSymbolsCount() }} simboli</span>
     </div>
     
     <div class="buttons-group">
       <button 
         class="btn btn-primary" 
         (click)="start()" 
-        [disabled]="wsOpen"
+        [disabled]="wsOpen || !symbolsInput"
         [class.loading]="isConnecting"
       >
-        {{ isConnecting ? 'CONNECTING...' : (wsOpen ? 'CONNECTED' : 'CONNECT WS') }}
+        {{ isConnecting ? 'CONNESSIONE...' : (wsOpen ? 'CONNESSO' : 'CONNETTI WS') }}
       </button>
       
-      <button class="btn btn-secondary" (click)="refresh()">
-        REFRESH DATA
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="!symbolsInput">
+        AGGIORNA DATI
       </button>
       
       <button class="btn btn-danger" (click)="stop()" [disabled]="!wsOpen">
-        DISCONNECT
+        DISCONNETTI
       </button>
     </div>
   </div>
 
-  <!-- Alert Manager -->
-  <app-alert-manager></app-alert-manager>
-
   <!-- Statistics -->
   <div class="stats-section">
     <div class="stat-card">
-      <span class="stat-label">Active Symbols</span>
-      <span class="stat-value">{{ miniTickers().length }}</span>
+      <span class="stat-label">Simboli Attivi</span>
+      <span class="stat-value">{{ getActiveSymbolsCount() }}</span>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Messages Received</span>
+      <span class="stat-label">Messaggi Ricevuti</span>
       <span class="stat-value">{{ messagesReceived }}</span>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Last Update</span>
+      <span class="stat-label">Ultimo Aggiornamento</span>
       <span class="stat-value">{{ lastUpdate | date:'HH:mm:ss' }}</span>
     </div>
   </div>
@@ -84,39 +81,12 @@
     </app-price-chart>
   </div>
 
-  <!-- Tickers Table -->
-  <div class="table-section">
-    <h3>MiniTicker Data ({{ symbolsInput }})</h3>
-    <div class="table-container">
-      <table class="ticker-table">
-        <thead>
-          <tr>
-            <th>Symbol</th>
-            <th>Last Price</th>
-            <th>24h High</th>
-            <th>24h Low</th>
-            <th>24h Volume</th>
-            <th>Last Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let ticker of miniTickers()" class="ticker-row">
-            <td class="symbol-cell">
-              <span class="symbol-badge">{{ ticker.symbol }}</span>
-            </td>
-            <td class="price-cell" [class.positive]="getPriceChange(ticker) > 0" 
-                [class.negative]="getPriceChange(ticker) < 0">
-              ${{ ticker.last_price | number:'1.2-2' }}
-            </td>
-            <td>${{ ticker.high_price | number:'1.2-2' }}</td>
-            <td>${{ ticker.low_price | number:'1.2-2' }}</td>
-            <td>{{ ticker.volume | number:'1.0-0' }}</td>
-            <td>{{ ticker.event_time | date:'HH:mm:ss' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <!-- MiniTicker Table Component -->
+  <app-mini-ticker-table 
+    [tickers]="miniTickers()" 
+    [title]="'Dati in Tempo Reale (' + symbolsInput + ')'">
+  </app-mini-ticker-table>
+
 
   <!-- Live Feed -->
   <div class="feed-section">

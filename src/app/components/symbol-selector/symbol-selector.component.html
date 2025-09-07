@@ -1,0 +1,56 @@
+<div class="symbol-selector">
+  <div class="selector-header">
+    <h4>Selezione Simboli</h4>
+    <div class="quick-actions">
+      <button class="btn btn-sm btn-outline" (click)="selectPopularSymbols()">Popolari</button>
+      <button class="btn btn-sm btn-outline" (click)="selectAllMajor()">Top 10</button>
+      <button class="btn btn-sm btn-outline" (click)="clearSymbols()">Pulisci</button>
+    </div>
+  </div>
+
+  <!-- Barra di ricerca -->
+  <div class="search-box">
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="onSearchChange($event)"
+      placeholder="Cerca simbolo (btc, eth, etc.)"
+      class="search-input"
+      (focus)="showDropdown = true"
+    />
+    
+    <!-- Dropdown risultati -->
+    <div class="dropdown" *ngIf="showDropdown && searchResults.length > 0">
+      <div *ngFor="let symbol of searchResults" 
+           class="dropdown-item"
+           (click)="selectSymbol(symbol)">
+        {{ symbol.toUpperCase() }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Simboli selezionati -->
+  <div class="selected-symbols">
+    <div *ngFor="let symbol of selectedSymbols" class="symbol-tag">
+      {{ symbol.toUpperCase() }}
+      <button (click)="removeSymbol(symbol)" class="remove-btn">×</button>
+    </div>
+    
+    <div *ngIf="selectedSymbols.length === 0" class="no-symbols">
+      Nessun simbolo selezionato
+    </div>
+  </div>
+
+  <!-- Simboli popolari -->
+  <div class="popular-symbols">
+    <h5>Simboli Popolari</h5>
+    <div class="popular-list">
+      <span *ngFor="let symbol of popularSymbols" 
+            class="popular-tag"
+            [class.selected]="selectedSymbols.includes(symbol)"
+            (click)="selectSymbol(symbol)">
+        {{ symbol.toUpperCase() }}
+      </span>
+    </div>
+  </div>
+</div>
