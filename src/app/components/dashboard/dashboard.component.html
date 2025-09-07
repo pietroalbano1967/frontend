@@ -1,0 +1,109 @@
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Binance Bot Dashboard</h1>
+      <p class="subtitle">Real-time cryptocurrency market data</p>
+    </div>
+    <div class="header-right">
+      <div class="connection-status" [class.connected]="wsOpen">
+        <span class="status-dot"></span>
+        {{ wsOpen ? 'CONNECTED' : 'DISCONNECTED' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-section">
+    <div class="symbols-control">
+      <label for="symbols">Symbols:</label>
+      <input 
+        id="symbols" 
+        type="text" 
+        [(ngModel)]="symbolsInput" 
+        placeholder="btcusdt,ethusdt"
+        class="symbols-input"
+      >
+    </div>
+    
+    <div class="buttons-group">
+      <button 
+        class="btn btn-primary" 
+        (click)="start()" 
+        [disabled]="wsOpen"
+        [class.loading]="isConnecting"
+      >
+        {{ isConnecting ? 'CONNECTING...' : (wsOpen ? 'CONNECTED' : 'CONNECT WS') }}
+      </button>
+      
+      <button class="btn btn-secondary" (click)="refresh()">
+        REFRESH DATA
+      </button>
+      
+      <button class="btn btn-danger" (click)="stop()" [disabled]="!wsOpen">
+        DISCONNECT
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <span class="stat-label">Active Symbols</span>
+      <span class="stat-value">{{ miniTickers().length }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Messages Received</span>
+      <span class="stat-value">{{ messagesReceived }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Last Update</span>
+      <span class="stat-value">{{ lastUpdate | date:'HH:mm:ss' }}</span>
+    </div>
+  </div>
+
+  <!-- Tickers Table -->
+  <div class="table-section">
+    <h3>MiniTicker Data ({{ symbolsInput }})</h3>
+    <div class="table-container">
+      <table class="ticker-table">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Last Price</th>
+            <th>24h High</th>
+            <th>24h Low</th>
+            <th>24h Volume</th>
+            <th>Last Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ticker of miniTickers()" class="ticker-row">
+            <td class="symbol-cell">
+              <span class="symbol-badge">{{ ticker.symbol }}</span>
+            </td>
+            <td class="price-cell" [class.positive]="getPriceChange(ticker) > 0" 
+                [class.negative]="getPriceChange(ticker) < 0">
+              ${{ ticker.last_price | number:'1.2-2' }}
+            </td>
+            <td>${{ ticker.high_price | number:'1.2-2' }}</td>
+            <td>${{ ticker.low_price | number:'1.2-2' }}</td>
+            <td>{{ ticker.volume | number:'1.0-0' }}</td>
+            <td>{{ ticker.event_time | date:'HH:mm:ss' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Live Feed -->
+  <div class="feed-section">
+    <div class="feed-header">
+      <h3>Live WebSocket Feed</h3>
+      <button class="btn btn-sm" (click)="clearFeed()">Clear</button>
+    </div>
+    <div class="feed-container">
+      <pre class="feed-content">{{ lastMsg | json }}</pre>
+    </div>
+  </div>
+</div>
