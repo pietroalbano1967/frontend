@@ -3,14 +3,14 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-
-import { BinanceApiService } from '../../services/binance-api.service';
-import { MiniTicker, WebSocketMessage } from '../../types/binance.types';
+import  { MiniTicker, WebSocketMessage } from './../../types/binance.types';
+import { BinanceApiService, } from '../../services/binance-api.service';
+import { PriceChartComponent } from '../chart/chart.component';
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [CommonModule, HttpClientModule, FormsModule],
+  imports: [CommonModule, HttpClientModule, FormsModule, PriceChartComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -24,6 +24,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   messagesReceived = 0;
   lastUpdate: Date | null = null;
   miniTickers = signal<MiniTicker[]>([]);
+  
+  // Aggiungi queste nuove signals per i grafici
+  btcPriceHistory = signal<number[]>([]);
+  ethPriceHistory = signal<number[]>([]);
+  chartLabels = signal<string[]>([]);
+  
   private wsSubscription: Subscription | null = null;
 
   ngOnInit() {
@@ -93,21 +99,50 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const existingIndex = currentTickers.findIndex(t => t.symbol === newData.symbol);
     
     if (existingIndex >= 0) {
-      // Update existing ticker
       const updatedTickers = [...currentTickers];
       updatedTickers[existingIndex] = {
         ...updatedTickers[existingIndex],
         ...newData
       };
       this.miniTickers.set(updatedTickers);
+      
+      // Aggiorna i dati per il grafico
+      this.updateChartData(newData);
     } else {
-      // Add new ticker
       this.miniTickers.set([...currentTickers, newData]);
     }
   }
 
+  private updateChartData(ticker: MiniTicker) {
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString();
+    
+    // Aggiorna le labels
+    if (this.chartLabels().length >= 20) {
+      this.chartLabels.set([...this.chartLabels().slice(1), timeLabel]);
+    } else {
+      this.chartLabels.set([...this.chartLabels(), timeLabel]);
+    }
+    
+    // Aggiorna i dati del prezzo in base al simbolo
+    if (ticker.symbol === 'btcusdt') {
+      if (this.btcPriceHistory().length >= 20) {
+        this.btcPriceHistory.set([...this.btcPriceHistory().slice(1), ticker.last_price]);
+      } else {
+        this.btcPriceHistory.set([...this.btcPriceHistory(), ticker.last_price]);
+      }
+    }
+    
+    if (ticker.symbol === 'ethusdt') {
+      if (this.ethPriceHistory().length >= 20) {
+        this.ethPriceHistory.set([...this.ethPriceHistory().slice(1), ticker.last_price]);
+      } else {
+        this.ethPriceHistory.set([...this.ethPriceHistory(), ticker.last_price]);
+      }
+    }
+  }
+
   getPriceChange(ticker: MiniTicker): number {
-    // Simple price change calculation based on last price vs high/low
     const midPrice = (ticker.high_price + ticker.low_price) / 2;
     return ticker.last_price - midPrice;
   }

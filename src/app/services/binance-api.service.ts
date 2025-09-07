@@ -46,4 +46,9 @@ export class BinanceApiService {
   listTickers(): Observable<string[]> {
     return this.http.get<string[]>(`${this.baseUrl}/api/market/tickers`);
   }
+
+  
+getHistoricalData(symbol: string, interval: string = '1m', limit: number = 50): Observable<any[]> {
+  return this.http.get<any[]>(`${this.baseUrl}/api/market/historical/${symbol}?interval=${interval}&limit=${limit}`);
+}
 }
