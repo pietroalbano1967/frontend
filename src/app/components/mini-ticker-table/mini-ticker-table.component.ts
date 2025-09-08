@@ -12,7 +12,7 @@ import { MiniTicker } from '../../types/binance.types';
 export class MiniTickerTableComponent implements OnChanges {
   @Input() tickers: MiniTicker[] = [];
   @Input() title: string = 'MiniTicker Data';
-  
+
   sortedTickers: MiniTicker[] = [];
   sortField: string = 'symbol';
   sortDirection: 'asc' | 'desc' = 'asc';
@@ -26,46 +26,33 @@ export class MiniTickerTableComponent implements OnChanges {
   sortTickers(field: string, direction: 'asc' | 'desc' = 'asc') {
     this.sortField = field;
     this.sortDirection = direction;
-    
+
     this.sortedTickers = [...this.tickers].sort((a, b) => {
       let valueA: any, valueB: any;
-      
+
       switch (field) {
         case 'symbol':
-          valueA = a.symbol;
-          valueB = b.symbol;
-          break;
+          valueA = a.symbol; valueB = b.symbol; break;
         case 'last_price':
-          valueA = a.last_price;
-          valueB = b.last_price;
-          break;
+          valueA = a.last_price; valueB = b.last_price; break;
         case 'high_price':
-          valueA = a.high_price;
-          valueB = b.high_price;
-          break;
+          valueA = a.high_price; valueB = b.high_price; break;
         case 'low_price':
-          valueA = a.low_price;
-          valueB = b.low_price;
-          break;
+          valueA = a.low_price; valueB = b.low_price; break;
         case 'volume':
-          valueA = a.volume;
-          valueB = b.volume;
-          break;
+          valueA = a.volume; valueB = b.volume; break;
         case 'event_time':
-          valueA = a.event_time;
-          valueB = b.event_time;
-          break;
+          valueA = a.event_time; valueB = b.event_time; break;
         default:
-          valueA = a.symbol;
-          valueB = b.symbol;
+          valueA = a.symbol; valueB = b.symbol;
       }
-      
+
       if (typeof valueA === 'string') {
-        return direction === 'asc' 
+        return direction === 'asc'
           ? valueA.localeCompare(valueB)
           : valueB.localeCompare(valueA);
       } else {
-        return direction === 'asc' 
+        return direction === 'asc'
           ? valueA - valueB
           : valueB - valueA;
       }

@@ -24,39 +24,67 @@ export class BinanceApiService {
   private wsSubject = new Subject<WebSocketMessage>();
 
   connectWS(symbols = 'btcusdt,ethusdt', types = 'miniTicker,kline_1m'): Observable<WebSocketMessage> {
-    // Filtra simboli vuoti
-    const validSymbols = symbols.split(',').filter(symbol => symbol.trim().length > 0);
-    
-    if (validSymbols.length === 0) {
-      // Restituisci un Observable vuoto invece di undefined
-      return new Observable<WebSocketMessage>(subscriber => {
-        // Completa immediatamente l'Observable senza emettere valori
-        subscriber.complete();
-      });
-    }
-    
-    if (this.ws) this.ws.close();
-    
-    const symbolsString = validSymbols.join(',');
-    const url = `${this.baseUrl.replace('http','ws')}/api/market/ws/stream?symbols=${encodeURIComponent(symbolsString)}&types=${encodeURIComponent(types)}`;
+  // Filtra simboli vuoti
+  const validSymbols = symbols.split(',').filter(symbol => symbol.trim().length > 0);
+  
+  if (validSymbols.length === 0) {
+    return new Observable<WebSocketMessage>(subscriber => {
+      subscriber.complete();
+    });
+  }
+  
+  // Chiudi connessione esistente
+  if (this.ws) {
+    this.ws.close();
+    this.ws = undefined;
+  }
+  
+  const symbolsString = validSymbols.join(',');
+  const url = `${this.baseUrl.replace('http','ws')}/api/market/ws/stream?symbols=${encodeURIComponent(symbolsString)}&types=${encodeURIComponent(types)}`;
+  
+  return new Observable<WebSocketMessage>(subscriber => {
     this.ws = new WebSocket(url);
     
-    this.ws.onopen = () => console.log('WS open');
+    this.ws.onopen = () => {
+      console.log('WebSocket connected for symbols:', symbolsString);
+    };
+    
     this.ws.onmessage = (ev: MessageEvent) => {
       try {
         const message: WebSocketMessage = JSON.parse(ev.data);
         this.wsSubject.next(message);
+        subscriber.next(message);
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
     };
-    this.ws.onclose = () => console.log('WS closed');
+    
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      subscriber.error(error);
+    };
+    
+    this.ws.onclose = () => {
+      console.log('WebSocket disconnected');
+      subscriber.complete();
+    };
     
     // invia ping applicativo ogni 20s
-    setInterval(() => this.ws?.send('ping'), 20000);
+    const pingInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send('ping');
+      }
+    }, 20000);
     
-    return this.wsSubject.asObservable().pipe(shareReplay(1));
-  }
+    // Cleanup function
+    return () => {
+      clearInterval(pingInterval);
+      if (this.ws) {
+        this.ws.close();
+      }
+    };
+  }).pipe(shareReplay(1));
+}
 
   latestMini(symbols: string[]): Observable<MiniTicker[]> {
     // Filtra simboli vuoti

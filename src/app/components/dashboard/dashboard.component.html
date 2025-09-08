@@ -15,31 +15,33 @@
 
   <!-- Symbol Selector -->
   <app-symbol-selector (symbolsChange)="onSymbolsChange($event)"></app-symbol-selector>
- <!-- Alert Manager -->
+
+  <!-- Alert Manager -->
   <app-alert-manager></app-alert-manager>
+
   <!-- Controls -->
   <div class="controls-section">
     <div class="symbols-info">
-      <strong>Simboli attivi:</strong> 
+      <strong>Simboli attivi:</strong>
       <span class="active-symbols">{{ symbolsInput || 'nessuno' }}</span>
-      • 
+      •
       <span class="symbols-count">{{ getActiveSymbolsCount() }} simboli</span>
     </div>
-    
+
     <div class="buttons-group">
-      <button 
-        class="btn btn-primary" 
-        (click)="start()" 
+      <button
+        class="btn btn-primary"
+        (click)="start()"
         [disabled]="wsOpen || !symbolsInput"
         [class.loading]="isConnecting"
       >
         {{ isConnecting ? 'CONNESSIONE...' : (wsOpen ? 'CONNESSO' : 'CONNETTI WS') }}
       </button>
-      
+
       <button class="btn btn-secondary" (click)="refresh()" [disabled]="!symbolsInput">
         AGGIORNA DATI
       </button>
-      
+
       <button class="btn btn-danger" (click)="stop()" [disabled]="!wsOpen">
         DISCONNETTI
       </button>
@@ -62,31 +64,24 @@
     </div>
   </div>
 
-  <!-- Charts -->
+  <!-- Charts (seguono i simboli selezionati, max 2) -->
   <div class="charts-section">
-    <app-price-chart 
-      *ngIf="btcPriceHistory().length > 0"
-      title="BTC/USDT Price History"
-      [data]="btcPriceHistory()"
-      [labels]="chartLabels()"
-      symbol="BTC/USDT">
-    </app-price-chart>
-    
-    <app-price-chart 
-      *ngIf="ethPriceHistory().length > 0"
-      title="ETH/USDT Price History"
-      [data]="ethPriceHistory()"
-      [labels]="chartLabels()"
-      symbol="ETH/USDT">
-    </app-price-chart>
+    <ng-container *ngFor="let sym of chartSymbols()">
+      <app-price-chart
+        *ngIf="getPriceHistory(sym).length > 0"
+        [title]="(sym.toUpperCase()) + ' Price History'"
+        [data]="getPriceHistory(sym)"
+        [labels]="chartLabels()"
+        [symbol]="sym.toUpperCase()">
+      </app-price-chart>
+    </ng-container>
   </div>
 
-  <!-- MiniTicker Table Component -->
-  <app-mini-ticker-table 
-    [tickers]="miniTickers()" 
+  <!-- MiniTicker Table: collegata alla selezione -->
+  <app-mini-ticker-table
+    [tickers]="miniTickers()"
     [title]="'Dati in Tempo Reale (' + symbolsInput + ')'">
   </app-mini-ticker-table>
-
 
   <!-- Live Feed -->
   <div class="feed-section">

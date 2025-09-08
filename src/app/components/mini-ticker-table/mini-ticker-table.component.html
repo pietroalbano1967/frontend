@@ -4,7 +4,7 @@
     <div class="table-info">
       <span class="symbols-count">{{ tickers.length }} simboli</span>
       <span class="last-update" *ngIf="tickers.length > 0">
-        • Ultimo aggiornamento: {{ tickers[0]?.event_time | date:'HH:mm:ss' }}
+        • Ultimo aggiornamento: {{ tickers[0].event_time | date:'HH:mm:ss' }}
       </span>
     </div>
   </div>
@@ -39,15 +39,15 @@
           <td class="symbol-cell">
             <span class="symbol-badge">{{ ticker.symbol.toUpperCase() }}</span>
           </td>
-          <td class="price-cell" 
-              [class.positive]="getPriceChange(ticker) > 0" 
+          <td class="price-cell"
+              [class.positive]="getPriceChange(ticker) > 0"
               [class.negative]="getPriceChange(ticker) < 0">
             ${{ ticker.last_price | number:'1.2-2' }}
           </td>
           <td>${{ ticker.high_price | number:'1.2-2' }}</td>
           <td>${{ ticker.low_price | number:'1.2-2' }}</td>
           <td>{{ ticker.volume | number:'1.0-0' }}</td>
-          <td [class.positive]="getPriceChangePercent(ticker) > 0" 
+          <td [class.positive]="getPriceChangePercent(ticker) > 0"
               [class.negative]="getPriceChangePercent(ticker) < 0">
             {{ getPriceChangePercent(ticker) | number:'1.2-2' }}%
           </td>

@@ -70,6 +70,8 @@ export class SymbolSelectorComponent {
       .filter(symbol => symbol.trim().length > 0)
       .map(symbol => symbol.trim());
     
+    console.log('Emitting symbols:', validSymbols); // Debug
     this.symbolsChange.emit(validSymbols.join(','));
   }
+
 }
