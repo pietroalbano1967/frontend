@@ -1,6 +1,8 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MiniTicker } from '../../types/binance.types';
+import { AlertService } from '../../services/alert.service';
+import { PriceAlert } from '../../services/alert.service';
 
 @Component({
   selector: 'app-mini-ticker-table',
@@ -16,11 +18,43 @@ export class MiniTickerTableComponent implements OnChanges {
   sortedTickers: MiniTicker[] = [];
   sortField: string = 'symbol';
   sortDirection: 'asc' | 'desc' = 'asc';
+  
+  // Cambia la struttura per memorizzare i prezzi degli alert
+  activeAlerts: Map<string, {above: number[], below: number[]}> = new Map();
+
+  constructor(private alertService: AlertService) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['tickers']) {
       this.sortTickers(this.sortField, this.sortDirection);
+      this.updateActiveAlerts();
     }
+  }
+
+  private updateActiveAlerts() {
+    const alerts: PriceAlert[] = this.alertService.getAlerts()();
+    this.activeAlerts.clear();
+    
+    alerts.forEach((alert: PriceAlert) => {
+      if (alert.active && !alert.triggered) {
+        const symbol = alert.symbol.toLowerCase();
+        
+        if (!this.activeAlerts.has(symbol)) {
+          this.activeAlerts.set(symbol, { above: [], below: [] });
+        }
+        
+        const symbolAlerts = this.activeAlerts.get(symbol)!;
+        if (alert.condition === 'above') {
+          symbolAlerts.above.push(alert.price);
+        } else {
+          symbolAlerts.below.push(alert.price);
+        }
+        
+        // Ordina i prezzi per una migliore visualizzazione
+        symbolAlerts.above.sort((a, b) => a - b);
+        symbolAlerts.below.sort((a, b) => a - b);
+      }
+    });
   }
 
   sortTickers(field: string, direction: 'asc' | 'desc' = 'asc') {
@@ -81,5 +115,32 @@ export class MiniTickerTableComponent implements OnChanges {
   getPriceChangePercent(ticker: MiniTicker): number {
     const midPrice = (ticker.high_price + ticker.low_price) / 2;
     return midPrice !== 0 ? ((ticker.last_price - midPrice) / midPrice) * 100 : 0;
+  }
+
+    getAlertsForSymbol(symbol: string): {above: number[], below: number[]} {
+    return this.activeAlerts.get(symbol.toLowerCase()) || { above: [], below: [] };
+  }
+
+  // Nuovo metodo per formattare i prezzi degli alert
+  formatAlertPrices(alerts: {above: number[], below: number[]}): string {
+    const parts = [];
+    
+    if (alerts.above.length > 0) {
+      const abovePrices = alerts.above.map(price => `↑$${price.toFixed(2)}`).join(' ');
+      parts.push(abovePrices);
+    }
+    
+    if (alerts.below.length > 0) {
+      const belowPrices = alerts.below.map(price => `↓$${price.toFixed(2)}`).join(' ');
+      parts.push(belowPrices);
+    }
+    
+    return parts.join(' ');
+  }
+
+  // Metodo per verificare se ci sono alert per un simbolo
+  hasAlerts(symbol: string): boolean {
+    const alerts = this.getAlertsForSymbol(symbol);
+    return alerts.above.length > 0 || alerts.below.length > 0;
   }
 }

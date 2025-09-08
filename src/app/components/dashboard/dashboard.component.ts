@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, inject, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +11,7 @@ import { AlertService } from '../../services/alert.service';
 import { SymbolSelectorComponent } from '../symbol-selector/symbol-selector.component';
 import { MiniTickerTableComponent } from '../mini-ticker-table/mini-ticker-table.component';
 
-const MAX_CHARTS = 2; // quante serie mostrare in grafico
+const MAX_CHARTS = 2;
 
 @Component({
   standalone: true,
@@ -31,26 +31,24 @@ const MAX_CHARTS = 2; // quante serie mostrare in grafico
 export class DashboardComponent implements OnInit, OnDestroy {
   private api = inject(BinanceApiService);
   private alertService = inject(AlertService);
+  private cdr = inject(ChangeDetectorRef);
   private isBrowser: boolean;
 
-  // Selezione iniziale
   symbolsInput = 'btcusdt,ethusdt';
-
   wsOpen = false;
   isConnecting = false;
   lastMsg: WebSocketMessage | null = null;
   messagesReceived = 0;
   lastUpdate: Date | null = null;
-
-  // MiniTicker
   miniTickers = signal<MiniTicker[]>([]);
-
-  // Grafici
   chartLabels = signal<string[]>([]);
-  // Dizionario prezzi per simbolo
   priceHistory = signal<Record<string, number[]>>({});
 
   private wsSubscription: Subscription | null = null;
+  private subscriptions: Subscription[] = [];
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectTimer: any = null;
 
   constructor(@Inject(PLATFORM_ID) platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -62,9 +60,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stop();
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions = [];
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
   }
 
-  /** Array normalizzato dei simboli selezionati */
   private selectedSymbolsArr(): string[] {
     return (this.symbolsInput || '')
       .split(',')
@@ -72,29 +74,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .filter(Boolean);
   }
 
-  /** Simboli usati per i grafici (primi N selezionati) */
   chartSymbols(): string[] {
     return this.selectedSymbolsArr().slice(0, MAX_CHARTS);
   }
 
-  /** Simboli per WS/refresh: solo selezionati */
   private wsSymbols(): string[] {
     return this.selectedSymbolsArr();
   }
 
   start() {
+    this.startWebSocket();
+  }
+
+  private startWebSocket() {
     const wsList = this.wsSymbols();
     if (wsList.length === 0) {
       console.warn('Nessun simbolo valido selezionato');
       return;
     }
 
+    // Ferma connessione esistente
+    this.stop();
+
     this.isConnecting = true;
 
-    this.wsSubscription = this.api.connectWS(wsList.join(','), 'miniTicker,kline_1m').subscribe({
+    const sub = this.api.connectWS(wsList.join(','), 'miniTicker,kline_1m').subscribe({
       next: (msg: WebSocketMessage) => {
         this.wsOpen = true;
         this.isConnecting = false;
+        this.reconnectAttempts = 0;
         this.messagesReceived++;
         this.lastUpdate = new Date();
         this.lastMsg = msg;
@@ -102,17 +110,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (msg?.type === 'miniTicker') {
           this.updateTickerData(msg.payload as MiniTicker);
         }
+        this.cdr.markForCheck();
       },
       error: (err: Error) => {
         console.error('WebSocket error:', err);
         this.isConnecting = false;
         this.wsOpen = false;
+        
+        // Tentativo di riconnessione
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          this.reconnectTimer = setTimeout(() => this.startWebSocket(), 2000 * this.reconnectAttempts);
+        }
+        this.cdr.markForCheck();
       },
       complete: () => {
         this.isConnecting = false;
         this.wsOpen = false;
+        this.cdr.markForCheck();
       }
     });
+
+    this.subscriptions.push(sub);
   }
 
   stop() {
@@ -122,6 +141,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     this.wsOpen = false;
     this.isConnecting = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
   }
 
   refresh() {
@@ -131,17 +154,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.api.latestMini(list).subscribe({
+    const sub = this.api.latestMini(list).subscribe({
       next: (data: MiniTicker[]) => {
         const allowed = new Set(this.selectedSymbolsArr());
-        // Mantieni solo i selezionati
         this.miniTickers.set(data.filter(t => allowed.has(t.symbol)));
         this.lastUpdate = new Date();
+        this.cdr.markForCheck();
       },
       error: (err: Error) => {
         console.error('Error refreshing data:', err);
       }
     });
+
+    this.subscriptions.push(sub);
   }
 
   clearFeed() {
@@ -149,12 +174,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.messagesReceived = 0;
   }
 
-  /** Aggiorna MiniTicker e (se il simbolo è grafico-attivo) la serie prezzi */
   private updateTickerData(newData: MiniTicker) {
     const allowed = new Set(this.selectedSymbolsArr());
-    if (!allowed.has(newData.symbol)) return; // ignora simboli non selezionati (es. dopo cambio selezione)
+    if (!allowed.has(newData.symbol)) return;
 
-    // aggiorna righe tabella
     const current = this.miniTickers();
     const idx = current.findIndex(t => t.symbol === newData.symbol);
 
@@ -166,25 +189,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.miniTickers.set([...current, newData]);
     }
 
-    // aggiorna grafico solo se il simbolo è tra quelli mostrati
     const chartSet = new Set(this.chartSymbols());
     if (chartSet.has(newData.symbol)) {
       this.updateChartData(newData);
     }
 
-    // controlla eventuali alert
     this.checkPriceAlerts(newData);
+    this.cdr.markForCheck();
   }
 
   private updateChartData(ticker: MiniTicker) {
     const now = new Date();
     const timeLabel = now.toLocaleTimeString();
 
-    // labels
     const labels = this.chartLabels();
     this.chartLabels.set(labels.length >= 50 ? [...labels.slice(1), timeLabel] : [...labels, timeLabel]);
 
-    // history per simbolo
     const hist = { ...this.priceHistory() };
     const arr = hist[ticker.symbol] ?? [];
     hist[ticker.symbol] = arr.length >= 50 ? [...arr.slice(1), ticker.last_price] : [...arr, ticker.last_price];
@@ -248,7 +268,6 @@ Prezzo attuale: $${currentPrice}`;
     return this.selectedSymbolsArr().length;
   }
 
-  /** Quando l’utente cambia i simboli dal selettore */
   onSymbolsChange(symbolsString: string) {
     const valid = symbolsString
       .split(',')
@@ -257,16 +276,13 @@ Prezzo attuale: $${currentPrice}`;
 
     this.symbolsInput = valid.join(',');
 
-    // Filtra subito la tabella per restare coerenti con la nuova selezione
     const allowed = new Set(valid);
     this.miniTickers.set(this.miniTickers().filter(t => allowed.has(t.symbol)));
 
-    // Riconnetti WS e aggiorna dati
     if (this.wsOpen) {
       this.stop();
-      this.start();
+      this.startWebSocket(); // Usa startWebSocket invece di start
     } else {
-      // se non eri connesso, almeno ricarica i dati
       this.refresh();
     }
   }

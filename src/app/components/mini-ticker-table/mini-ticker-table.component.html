@@ -29,6 +29,7 @@
             Volume {{ getSortIcon('volume') }}
           </th>
           <th>Variaz.</th>
+          <th>Alert Prezzi</th> <!-- Cambiato il nome della colonna -->
           <th (click)="onSort('event_time')" class="sortable">
             Ultimo Agg. {{ getSortIcon('event_time') }}
           </th>
@@ -50,6 +51,21 @@
           <td [class.positive]="getPriceChangePercent(ticker) > 0"
               [class.negative]="getPriceChangePercent(ticker) < 0">
             {{ getPriceChangePercent(ticker) | number:'1.2-2' }}%
+          </td>
+          <td class="alert-cell">
+            <div *ngIf="hasAlerts(ticker.symbol)" class="alert-prices">
+              <div *ngFor="let price of getAlertsForSymbol(ticker.symbol).above" 
+                   class="alert-price above">
+                ↑ ${{ price | number:'1.2-2' }}
+              </div>
+              <div *ngFor="let price of getAlertsForSymbol(ticker.symbol).below" 
+                   class="alert-price below">
+                ↓ ${{ price | number:'1.2-2' }}
+              </div>
+            </div>
+            <div *ngIf="!hasAlerts(ticker.symbol)" class="no-alerts">
+              -
+            </div>
           </td>
           <td>{{ ticker.event_time | date:'HH:mm:ss' }}</td>
         </tr>

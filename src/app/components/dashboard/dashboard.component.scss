@@ -362,3 +362,44 @@
     justify-content: flex-start;
   }
 }
+// Aggiungi al file chart.component.scss o dashboard.component.scss
+.chart-container {
+  position: relative;
+  
+  .alert-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 10;
+    
+    &.above {
+      background: rgba(40, 167, 69, 0.5);
+      border-top: 1px dashed #28a745;
+    }
+    
+    &.below {
+      background: rgba(220, 53, 69, 0.5);
+      border-top: 1px dotted #dc3545;
+    }
+    
+    .alert-label {
+      position: absolute;
+      right: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      
+      &.above {
+        background: #28a745;
+        color: white;
+      }
+      
+      &.below {
+        background: #dc3545;
+        color: white;
+      }
+    }
+  }
+}

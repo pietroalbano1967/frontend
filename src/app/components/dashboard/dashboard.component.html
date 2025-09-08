@@ -68,12 +68,12 @@
   <div class="charts-section">
     <ng-container *ngFor="let sym of chartSymbols()">
       <app-price-chart
-        *ngIf="getPriceHistory(sym).length > 0"
-        [title]="(sym.toUpperCase()) + ' Price History'"
-        [data]="getPriceHistory(sym)"
-        [labels]="chartLabels()"
-        [symbol]="sym.toUpperCase()">
-      </app-price-chart>
+  *ngIf="getPriceHistory(sym).length > 0"
+  [title]="(sym.toUpperCase()) + ' Price History'"
+  [data]="getPriceHistory(sym)"
+  [labels]="chartLabels()"
+  [symbol]="sym.toUpperCase()">
+</app-price-chart>
     </ng-container>
   </div>
 

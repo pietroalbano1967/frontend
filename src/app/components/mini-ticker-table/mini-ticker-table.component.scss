@@ -125,3 +125,76 @@
 .table-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+.alert-cell {
+  text-align: center;
+  font-size: 12px;
+}
+
+.alert-badge {
+  background: #ffd54f;
+  color: #333;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 11px;
+  
+  &.multiple {
+    background: linear-gradient(135deg, #ffd54f 0%, #4fc3f7 100%);
+  }
+}
+
+.no-alerts {
+  color: #6c757d;
+  font-style: italic;
+}
+.alert-cell {
+  min-width: 120px;
+}
+
+.alert-prices {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alert-price {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  
+  &.above {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+  }
+  
+  &.below {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+  }
+}
+
+.no-alerts {
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+}
+
+// Per rendere la tabella responsive
+.table-container {
+  overflow-x: auto;
+  
+  @media (max-width: 768px) {
+    .alert-cell {
+      min-width: 80px;
+    }
+    
+    .alert-price {
+      font-size: 10px;
+      padding: 1px 4px;
+    }
+  }
+}
