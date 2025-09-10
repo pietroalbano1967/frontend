@@ -493,3 +493,258 @@
     margin-top: 10px;
   }
 }
+/* Layout migliorato */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  
+  .header-left h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+  
+  .subtitle {
+    margin: 0;
+    opacity: 0.9;
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+}
+
+/* Sezioni */
+.controls-section,
+.stats-section,
+.charts-section,
+.analytics-section,
+.table-section,
+.feed-section {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+  
+  h3 {
+    margin: 0;
+    color: #333;
+  }
+}
+
+/* Ticker selezionato */
+.selected-ticker-section {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  
+  .ticker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    h2 {
+      margin: 0;
+      color: #333;
+    }
+  }
+  
+  .ticker-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+/* Grid per dettagli */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.detail-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+  
+  .label {
+    display: block;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  
+  .value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    
+    &.positive { color: #28a745; }
+    &.negative { color: #dc3545; }
+  }
+}
+
+/* Stats */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  
+  .stat-card {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    
+    .stat-label {
+      display: block;
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #007bff;
+    }
+  }
+}
+
+/* Charts grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+/* Controls */
+.controls-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  
+  .symbols-info {
+    font-size: 0.95rem;
+    
+    .active-symbols {
+      color: #007bff;
+      font-weight: 500;
+    }
+    
+    .symbols-count {
+      color: #28a745;
+      font-weight: 500;
+    }
+  }
+  
+  .buttons-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
+
+/* Connection status */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  background: #dc3545;
+  color: white;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  
+  &.connected {
+    background: #28a745;
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    background: currentColor;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Feed */
+.feed-container {
+  max-height: 200px;
+  overflow-y: auto;
+  background: #1e1e1e;
+  border-radius: 6px;
+  padding: 10px;
+  
+  .feed-content {
+    margin: 0;
+    color: #d4d4d4;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 10px;
+    gap: 15px;
+  }
+  
+  .header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

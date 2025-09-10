@@ -96,4 +96,10 @@ export class AnalyticsService {
   getAllAnalyses(): PriceAnalysis[] {
     return Array.from(this.analyses().values());
   }
+  refreshAnalyses(): void {
+    // Logica per aggiornare le analisi
+    console.log('Analisi aggiornate');
+    // Qui puoi aggiungere la logica per ricaricare i dati
+  }
+  
 }

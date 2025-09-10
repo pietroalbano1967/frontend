@@ -4,7 +4,7 @@
     <div class="quick-actions">
       <button class="btn btn-sm btn-outline" (click)="selectPopularSymbols()">Popolari</button>
       <button class="btn btn-sm btn-outline" (click)="selectAllMajor()">Top 10</button>
-      <button class="btn btn-sm btn-outline" (click)="clearSymbols()">Pulisci</button>
+      <button class="btn btn-sm btn-outline" (click)="clearSymbols()">Pulisci Tutto</button>
     </div>
   </div>
 
@@ -17,13 +17,14 @@
       placeholder="Cerca simbolo (btc, eth, etc.)"
       class="search-input"
       (focus)="showDropdown = true"
+      (blur)="onSearchBlur()"
     />
     
     <!-- Dropdown risultati -->
     <div class="dropdown" *ngIf="showDropdown && searchResults.length > 0">
       <div *ngFor="let symbol of searchResults" 
            class="dropdown-item"
-           (click)="selectSymbol(symbol)">
+           (mousedown)="selectSymbol(symbol)">
         {{ symbol.toUpperCase() }}
       </div>
     </div>
@@ -37,7 +38,7 @@
     </div>
     
     <div *ngIf="selectedSymbols.length === 0" class="no-symbols">
-      Nessun simbolo selezionato
+      Nessun simbolo selezionato. Usa la ricerca o seleziona dai popolari.
     </div>
   </div>
 
@@ -48,9 +49,17 @@
       <span *ngFor="let symbol of popularSymbols" 
             class="popular-tag"
             [class.selected]="selectedSymbols.includes(symbol)"
-            (click)="selectSymbol(symbol)">
+            (click)="togglePopularSymbol(symbol)">
         {{ symbol.toUpperCase() }}
       </span>
     </div>
+  </div>
+
+  <!-- Pulsante Applica -->
+  <div class="selector-controls">
+    <button class="btn btn-primary" (click)="applySymbols()" 
+            [disabled]="selectedSymbols.length === 0">
+      Applica {{ selectedSymbols.length }} Simboli
+    </button>
   </div>
 </div>

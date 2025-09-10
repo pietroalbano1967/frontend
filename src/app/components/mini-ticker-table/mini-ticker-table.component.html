@@ -29,14 +29,17 @@
             Volume {{ getSortIcon('volume') }}
           </th>
           <th>Variaz.</th>
-          <th>Alert Prezzi</th> <!-- Cambiato il nome della colonna -->
+          <th>Alert Prezzi</th>
           <th (click)="onSort('event_time')" class="sortable">
             Ultimo Agg. {{ getSortIcon('event_time') }}
           </th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let ticker of sortedTickers" class="ticker-row" (click)="onTickerClick(ticker)">
+        <!-- NOTA: Usa sortedTickersArray() invece di sortedTickers -->
+        <tr *ngFor="let ticker of sortedTickersArray" 
+            class="ticker-row" 
+            (click)="onTickerClick(ticker)">
           <td class="symbol-cell">
             <span class="symbol-badge">{{ ticker.symbol.toUpperCase() }}</span>
           </td>

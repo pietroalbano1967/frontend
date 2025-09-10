@@ -16,39 +16,12 @@
     </div>
   </div>
 
-  <!-- Symbol Selector -->
-  <app-symbol-selector (symbolsChange)="onSymbolsChange($event)"></app-symbol-selector>
+  <app-symbol-selector 
+  (symbolsChange)="onSymbolsChange($event)"
+  (clearAll)="onClearAll()"> <!-- Aggiungi questo -->
+</app-symbol-selector>
 
-  <!-- Ticker Selezionato -->
-  <div class="selected-ticker-section" *ngIf="selectedTicker">
-    <div class="ticker-header">
-      <h2>{{ selectedTicker.toUpperCase() }} - Dettaglio</h2>
-      <button class="btn btn-sm btn-outline" (click)="selectedTicker = ''">Chiudi Dettaglio</button>
-    </div>
-    
-    <app-alert-manager [filterBySymbol]="selectedTicker"></app-alert-manager>
-
-    <app-price-chart
-      *ngIf="getPriceHistory(selectedTicker).length > 0"
-      [title]="selectedTicker.toUpperCase() + ' Price History'"
-      [data]="getPriceHistory(selectedTicker)"
-      [labels]="chartLabels()"
-      [symbol]="selectedTicker.toUpperCase()">
-    </app-price-chart>
-
-    <div class="ticker-details" *ngIf="getTickerDetails(selectedTicker) as tickerData">
-      <div class="detail-card">
-        <span class="label">Prezzo corrente:</span>
-        <span class="value" [class.positive]="getPriceChangePercent(tickerData) > 0" 
-              [class.negative]="getPriceChangePercent(tickerData) < 0">
-          ${{ tickerData.last_price | number:'1.2-2' }}
-        </span>
-      </div>
-      <!-- Aggiungi altri detail-card qui -->
-    </div>
-  </div>
-
-  <!-- Controls -->
+  <!-- Controls Section -->
   <div class="controls-section">
     <div class="symbols-info">
       <strong>Simboli attivi:</strong>
@@ -86,36 +59,120 @@
     </div>
   </div>
 
-  <!-- Charts Section -->
-  <div class="charts-section" *ngIf="!selectedTicker">
-    <ng-container *ngFor="let sym of chartSymbols()">
+  <!-- Ticker Selezionato -->
+  <div class="selected-ticker-section" *ngIf="selectedTicker">
+    <div class="ticker-header">
+      <h2>{{ selectedTicker.toUpperCase() }} - Dettaglio</h2>
+      <button class="btn btn-sm btn-outline" (click)="clearSelection()">Chiudi Dettaglio</button>
+    </div>
+    
+    <div class="ticker-content">
+      <!-- Dettagli Ticker -->
+      <div class="ticker-details" *ngIf="getTickerDetails(selectedTicker) as tickerData">
+        <div class="detail-grid">
+          <div class="detail-card">
+            <span class="label">Prezzo corrente:</span>
+            <span class="value" [class.positive]="getPriceChangePercent(tickerData) > 0" 
+                  [class.negative]="getPriceChangePercent(tickerData) < 0">
+              ${{ tickerData.last_price | number:'1.2-2' }}
+            </span>
+          </div>
+          <div class="detail-card">
+            <span class="label">24h High:</span>
+            <span class="value">${{ tickerData.high_price | number:'1.2-2' }}</span>
+          </div>
+          <div class="detail-card">
+            <span class="label">24h Low:</span>
+            <span class="value">${{ tickerData.low_price | number:'1.2-2' }}</span>
+          </div>
+          <div class="detail-card">
+            <span class="label">Volume:</span>
+            <span class="value">{{ tickerData.volume | number:'1.0-0' }}</span>
+          </div>
+          <div class="detail-card">
+            <span class="label">Variazione:</span>
+            <span class="value" [class.positive]="getPriceChangePercent(tickerData) > 0" 
+                  [class.negative]="getPriceChangePercent(tickerData) < 0">
+              {{ getPriceChangePercent(tickerData) | number:'1.2-2' }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert Manager -->
+      <app-alert-manager [filterBySymbol]="selectedTicker"></app-alert-manager>
+
+      <!-- Price Chart -->
       <app-price-chart
-        *ngIf="getPriceHistory(sym).length > 0"
-        [title]="(sym.toUpperCase()) + ' Price History'"
-        [data]="getPriceHistory(sym)"
+        *ngIf="getPriceHistory(selectedTicker).length > 0"
+        [title]="selectedTicker.toUpperCase() + ' Price History'"
+        [data]="getPriceHistory(selectedTicker)"
         [labels]="chartLabels()"
-        [symbol]="sym.toUpperCase()">
+        [symbol]="selectedTicker.toUpperCase()">
       </app-price-chart>
-    </ng-container>
+    </div>
   </div>
 
-  <!-- Analytics Section -->
-  <div class="analytics-section" *ngIf="!selectedTicker">
-    <app-analytics-dashboard [tickers]="miniTickers()"></app-analytics-dashboard>
+  <!-- Main Content (quando nessun ticker è selezionato) -->
+  <div *ngIf="!selectedTicker">
+    <!-- Charts Section -->
+    <div class="charts-section">
+      <div class="section-header">
+        <h3>Grafici Prezzi</h3>
+      </div>
+      <div class="charts-grid">
+        <ng-container *ngFor="let sym of chartSymbols()">
+          <app-price-chart
+            *ngIf="getPriceHistory(sym).length > 0"
+            [title]="sym.toUpperCase() + ' Price History'"
+            [data]="getPriceHistory(sym)"
+            [labels]="chartLabels()"
+            [symbol]="sym.toUpperCase()">
+          </app-price-chart>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="analytics-section">
+      <div class="section-header">
+        <h3>Analisi Tecnica</h3>
+        <div class="section-controls">
+          <button class="btn btn-sm" (click)="showAllAnalytics = !showAllAnalytics">
+            {{ showAllAnalytics ? 'Nascondi' : 'Mostra' }} Tutte le Analisi
+          </button>
+        </div>
+      </div>
+      <app-analytics-dashboard 
+        [tickers]="miniTickers()" 
+        [selectedSymbol]="showAllAnalytics ? '' : analyticsSymbol">
+      </app-analytics-dashboard>
+    </div>
+
+    <!-- MiniTicker Table -->
+    <div class="table-section">
+      <div class="section-header">
+        <h3>Dati in Tempo Reale</h3>
+        <span class="table-info">
+          {{ miniTickers().length }} simboli • 
+          Ultimo agg: {{ lastUpdate | date:'HH:mm:ss' }}
+        </span>
+      </div>
+      <app-mini-ticker-table
+        [tickers]="miniTickers()"
+        [title]="''"
+        (tickerSelect)="selectTicker($event)">
+      </app-mini-ticker-table>
+    </div>
   </div>
 
-  <!-- MiniTicker Table -->
-  <app-mini-ticker-table
-    [tickers]="miniTickers()"
-    [title]="'Dati in Tempo Reale'"
-    (tickerSelect)="selectTicker($event)">
-  </app-mini-ticker-table>
-
-  <!-- Live Feed -->
+  <!-- Live Feed (sempre visibile) -->
   <div class="feed-section">
-    <div class="feed-header">
+    <div class="section-header">
       <h3>Live WebSocket Feed</h3>
-      <button class="btn btn-sm" (click)="clearFeed()">Clear</button>
+      <div class="section-controls">
+        <button class="btn btn-sm" (click)="clearFeed()">Pulisci</button>
+      </div>
     </div>
     <div class="feed-container">
       <pre class="feed-content">{{ lastMsg | json }}</pre>

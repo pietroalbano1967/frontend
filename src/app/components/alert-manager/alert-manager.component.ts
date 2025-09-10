@@ -1,4 +1,4 @@
-import { Component, inject, Input } from '@angular/core'; // Aggiungi Input qui
+import { Component, inject, Input, OnChanges, SimpleChanges } from '@angular/core'; // Aggiungi OnChanges e SimpleChanges
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AlertService, PriceAlert } from '../../services/alert.service';
@@ -10,12 +10,11 @@ import { AlertService, PriceAlert } from '../../services/alert.service';
   templateUrl: './alert-manager.component.html',
   styleUrls: ['./alert-manager.component.scss']
 })
-export class AlertManagerComponent {
+export class AlertManagerComponent implements OnChanges { // Implementa OnChanges
   private alertService = inject(AlertService);
   
   alerts = this.alertService.getAlerts();
   
-  // Aggiungi la proprietà Input per filtrare per simbolo
   @Input() filterBySymbol: string = '';
   
   newAlert = {
@@ -23,6 +22,14 @@ export class AlertManagerComponent {
     condition: 'above' as 'above' | 'below',
     price: 0
   };
+
+  // Aggiungi il metodo ngOnChanges
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['filterBySymbol'] && this.filterBySymbol) {
+      // Quando c'è un filtro, precompila automaticamente il simbolo
+      this.newAlert.symbol = this.filterBySymbol.toUpperCase();
+    }
+  }
 
   // Metodo per ottenere gli alert filtrati
   get filteredAlerts() {

@@ -1,50 +1,76 @@
-<!-- src/app/components/analytics-dashboard/analytics-dashboard.component.html -->
 <div class="analytics-dashboard">
-  <h3>Analisi Prezzi</h3>
+  <h3>
+    Analisi Tecnica
+    <span *ngIf="selectedSymbol" class="filter-info">
+      - {{ selectedSymbol.toUpperCase() }}
+    </span>
+    <button class="btn btn-sm refresh-btn" (click)="updateAnalyses()" title="Aggiorna analisi">
+      🔄
+    </button>
+  </h3>
   
-  <div *ngIf="getAnalyses().length === 0" class="no-data">
-    <p>Nessun dato analitico disponibile. I dati verranno aggiornati in tempo reale.</p>
+  <div *ngIf="isLoading()" class="loading">
+    <p>Caricamento analisi in corso...</p>
+  </div>
+  
+  <div *ngIf="!isLoading() && getAnalyses().length === 0" class="no-data">
+    <p *ngIf="selectedSymbol">
+      Nessun dato analitico disponibile per {{ selectedSymbol.toUpperCase() }}.
+      I dati verranno aggiornati in tempo reale.
+    </p>
+    <p *ngIf="!selectedSymbol">
+      Nessun dato analitico disponibile. Seleziona un simbolo o attendi l'aggiornamento dei dati.
+    </p>
   </div>
 
-  <div *ngFor="let analysis of getAnalyses()" class="analysis-card">
-    <div class="analysis-header">
-      <span class="symbol">{{ analysis.symbol.toUpperCase() }}</span>
-      <span class="trend" [class]="getTrendClass(analysis.trend)">
-        {{ getTrendIcon(analysis.trend) }} {{ analysis.trend }}
-      </span>
-    </div>
-    
-    <div class="analysis-content">
-      <div class="price-info">
-        <span class="current-price">${{ analysis.currentPrice | number:'1.2-2' }}</span>
-        <span class="price-change" [class.positive]="analysis.priceChange24h > 0" 
-              [class.negative]="analysis.priceChange24h < 0">
-          {{ analysis.priceChangePercent24h > 0 ? '+' : '' }}{{ analysis.priceChangePercent24h | number:'1.2-2' }}%
+  <div *ngIf="!isLoading() && getAnalyses().length > 0" class="analyses-grid">
+    <div *ngFor="let analysis of getAnalyses()" class="analysis-card">
+      <div class="analysis-header">
+        <span class="symbol">{{ analysis.symbol.toUpperCase() }}</span>
+        <span class="trend" [class]="getTrendClass(analysis.trend)">
+          {{ getTrendIcon(analysis.trend) }} {{ analysis.trend }}
         </span>
       </div>
       
-      <div class="technical-info">
-        <div class="info-item">
-          <span class="label">Volatilità:</span>
-          <span class="value">{{ analysis.volatility | number:'1.4-4' }}</span>
-        </div>
-        
-        <div class="info-item">
-          <span class="label">Supporti:</span>
-          <span class="value">
-            <span *ngFor="let support of analysis.supportLevels" class="level">
-              ${{ support | number:'1.2-2' }}
-            </span>
+      <div class="analysis-content">
+        <div class="price-info">
+          <span class="current-price">${{ analysis.lastPrice | number:'1.2-2' }}</span>
+          <span class="price-change" 
+                [class.positive]="analysis.priceChange > 0" 
+                [class.negative]="analysis.priceChange < 0">
+            {{ analysis.priceChange > 0 ? '+' : '' }}{{ analysis.priceChange | number:'1.2-2' }}%
           </span>
         </div>
         
-        <div class="info-item">
-          <span class="label">Resistenze:</span>
-          <span class="value">
-            <span *ngFor="let resistance of analysis.resistanceLevels" class="level">
-              ${{ resistance | number:'1.2-2' }}
+        <div class="technical-info">
+          <div class="info-item">
+            <span class="label">RSI:</span>
+            <span class="value" [class.overbought]="analysis.rsi > 70" 
+                  [class.oversold]="analysis.rsi < 30">
+              {{ analysis.rsi | number:'1.0-0' }}
             </span>
-          </span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Forza:</span>
+            <span class="value" [class]="getStrengthClass(analysis.strength)">
+              {{ analysis.strength | number:'1.0-0' }}%
+            </span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Volume:</span>
+            <span class="value">{{ analysis.volume | number:'1.0-0' }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Segnale:</span>
+            <span class="value signal">{{ analysis.signal || 'Neutrale' }}</span>
+          </div>
+        </div>
+        
+        <div class="time-info">
+          <small>Aggiornato: {{ analysis.timestamp | date:'HH:mm:ss' }}</small>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { Component, inject, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BinanceApiService } from '../../services/binance-api.service';
@@ -10,23 +10,26 @@ import { BinanceApiService } from '../../services/binance-api.service';
   templateUrl: './symbol-selector.component.html',
   styleUrls: ['./symbol-selector.component.scss']
 })
-export class SymbolSelectorComponent {
-  private api = inject(BinanceApiService);
-  
+export class SymbolSelectorComponent implements OnInit {
   @Output() symbolsChange = new EventEmitter<string>();
-  
-  popularSymbols = this.api.getPopularSymbols();
+  @Output() clearAll = new EventEmitter<void>();
+
   searchQuery = '';
+  selectedSymbols: string[] = [];
   searchResults: string[] = [];
-  selectedSymbols: string[] = ['btcusdt', 'ethusdt'];
+  popularSymbols: string[] = [];
   showDropdown = false;
+
+  constructor(private api: BinanceApiService) {}
+
+  ngOnInit() {
+    this.popularSymbols = this.api.getPopularSymbols();
+  }
 
   onSearchChange(query: string) {
     this.searchQuery = query;
-    const trimmedQuery = query.trim();
-    
-    if (trimmedQuery.length > 1) {
-      this.searchResults = this.api.searchSymbols(trimmedQuery);
+    if (query.length > 1) {
+      this.searchResults = this.api.searchSymbols(query);
       this.showDropdown = true;
     } else {
       this.searchResults = [];
@@ -34,11 +37,17 @@ export class SymbolSelectorComponent {
     }
   }
 
+  onSearchBlur() {
+    // Chiudi il dropdown dopo un piccolo delay per permettere il click sugli items
+    setTimeout(() => {
+      this.showDropdown = false;
+    }, 200);
+  }
+
   selectSymbol(symbol: string) {
-    const trimmedSymbol = symbol.trim();
-    if (trimmedSymbol && !this.selectedSymbols.includes(trimmedSymbol)) {
-      this.selectedSymbols.push(trimmedSymbol);
-      this.emitSymbols();
+    if (!this.selectedSymbols.includes(symbol)) {
+      this.selectedSymbols.push(symbol);
+      this.updateSymbolsOutput();
     }
     this.searchQuery = '';
     this.showDropdown = false;
@@ -46,32 +55,41 @@ export class SymbolSelectorComponent {
 
   removeSymbol(symbol: string) {
     this.selectedSymbols = this.selectedSymbols.filter(s => s !== symbol);
-    this.emitSymbols();
+    this.updateSymbolsOutput();
+  }
+
+  togglePopularSymbol(symbol: string) {
+    if (this.selectedSymbols.includes(symbol)) {
+      this.removeSymbol(symbol);
+    } else {
+      this.selectSymbol(symbol);
+    }
   }
 
   selectPopularSymbols() {
-    this.selectedSymbols = ['btcusdt', 'ethusdt', 'bnbusdt', 'solusdt'];
-    this.emitSymbols();
+    this.selectedSymbols = [...this.popularSymbols.slice(0, 5)];
+    this.updateSymbolsOutput();
   }
 
   selectAllMajor() {
-    this.selectedSymbols = this.popularSymbols.slice(0, 10);
-    this.emitSymbols();
+    this.selectedSymbols = [...this.popularSymbols.slice(0, 10)];
+    this.updateSymbolsOutput();
   }
 
   clearSymbols() {
     this.selectedSymbols = [];
-    this.emitSymbols();
+    this.searchQuery = '';
+    this.showDropdown = false;
+    this.updateSymbolsOutput();
+    this.clearAll.emit();
   }
 
-  private emitSymbols() {
-    // Filtra i simboli vuoti e trimma gli spazi
-    const validSymbols = this.selectedSymbols
-      .filter(symbol => symbol.trim().length > 0)
-      .map(symbol => symbol.trim());
-    
-    console.log('Emitting symbols:', validSymbols); // Debug
-    this.symbolsChange.emit(validSymbols.join(','));
+  applySymbols() {
+    // Questo metodo è per forzare l'applicazione dei simboli selezionati
+    this.updateSymbolsOutput();
   }
 
+  private updateSymbolsOutput() {
+    this.symbolsChange.emit(this.selectedSymbols.join(','));
+  }
 }

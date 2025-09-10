@@ -22,9 +22,63 @@ export class BinanceApiService {
   private baseUrl = 'http://localhost:8000';
   private ws?: WebSocket;
   private wsSubject = new Subject<WebSocketMessage>();
-
-  connectWS(symbols = 'btcusdt,ethusdt', types = 'miniTicker,kline_1m'): Observable<WebSocketMessage> {
-  // Filtra simboli vuoti
+  private currentSymbols: string = '';
+  
+   updateWSSymbols(newSymbols: string[]): Observable<boolean> {
+    return new Observable<boolean>(subscriber => {
+      const newSymbolsString = newSymbols.filter(s => s.trim()).join(',');
+      
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        subscriber.next(false);
+        subscriber.complete();
+        return;
+      }
+      
+      if (this.currentSymbols === newSymbolsString) {
+        subscriber.next(true);
+        subscriber.complete();
+        return;
+      }
+      
+      const updateMessage = {
+        action: 'update_symbols',
+        symbols: newSymbolsString
+      };
+      
+      this.ws.send(JSON.stringify(updateMessage));
+      
+      // Timeout per la conferma
+      const timeout = setTimeout(() => {
+        subscriber.next(false);
+        subscriber.complete();
+      }, 5000);
+      
+      // Listener per conferma (da implementare nel server)
+      const messageHandler = (event: MessageEvent) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === 'symbols_updated') {
+            clearTimeout(timeout);
+            this.currentSymbols = newSymbolsString;
+            subscriber.next(true);
+            subscriber.complete();
+          }
+        } catch (e) {
+          // Ignora messaggi non JSON
+        }
+      };
+      
+      this.ws.addEventListener('message', messageHandler);
+      
+      return () => {
+        this.ws?.removeEventListener('message', messageHandler);
+        clearTimeout(timeout);
+      };
+    });
+  }
+  
+  connectWS(symbols: string, types: string): Observable<WebSocketMessage> {
+  this.currentSymbols = symbols;
   const validSymbols = symbols.split(',').filter(symbol => symbol.trim().length > 0);
   
   if (validSymbols.length === 0) {

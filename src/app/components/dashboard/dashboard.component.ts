@@ -51,7 +51,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   chartLabels = signal<string[]>([]);
   priceHistory = signal<Record<string, number[]>>({});
   selectedTicker: string = '';
-
+  showAllAnalytics: boolean = false;
   private wsSubscription: Subscription | null = null;
   private subscriptions: Subscription[] = [];
   private reconnectAttempts = 0;
@@ -100,7 +100,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   start() {
     this.startWebSocket();
   }
-
+// Aggiungi questo metodo
+  onClearAll() {
+    this.symbolsInput = '';
+    this.selectedTicker = '';
+    this.analyticsSymbol = '';
+    this.showAllAnalytics = false;
+    this.miniTickers.set([]);
+    this.chartLabels.set([]);
+    this.priceHistory.set({});
+    this.stop(); // Disconnetti il WebSocket
+    this.clearFeed();
+  }
   private startWebSocket() {
     const wsList = this.wsSymbols();
     if (wsList.length === 0) {
@@ -234,11 +245,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private checkPriceAlerts(ticker: MiniTicker) {
-    const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
-    triggeredAlerts.forEach(alert => {
-      this.showAlertNotification(alert, ticker.last_price);
-    });
-  }
+  console.log('Checking price alerts for:', ticker.symbol, ticker.last_price);
+  const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
+  console.log('Triggered alerts:', triggeredAlerts);
+  
+  triggeredAlerts.forEach(alert => {
+    this.showAlertNotification(alert, ticker.last_price);
+  });
+}
 
   private showAlertNotification(alert: any, currentPrice: number) {
     if (!this.isBrowser) return;
@@ -260,10 +274,20 @@ Prezzo attuale: $${currentPrice}`;
     this.playAlertSound();
   }
 
-  // Metodo per selezionare un ticker
-  selectTicker(ticker: MiniTicker) {
-    this.selectedTicker = ticker.symbol;
-  }
+  // dashboard.component.ts - aggiungi questa proprietà
+analyticsSymbol: string = '';
+
+// aggiorna il metodo selectTicker
+selectTicker(ticker: MiniTicker) {
+  this.selectedTicker = ticker.symbol;
+  this.analyticsSymbol = ticker.symbol; // Imposta il simbolo per analytics
+}
+
+// aggiungi metodo per deselezionare
+clearSelection() {
+  this.selectedTicker = '';
+  this.analyticsSymbol = '';
+}
 
   // Metodo per ottenere i dettagli di un ticker specifico
   getTickerDetails(symbol: string): MiniTicker | null {
@@ -302,22 +326,31 @@ Prezzo attuale: $${currentPrice}`;
     return this.selectedSymbolsArr().length;
   }
 
-  onSymbolsChange(symbolsString: string) {
-    const valid = symbolsString
-      .split(',')
+   onSymbolsChange(symbolsString: string) {
+    const valid = symbolsString.split(',')
       .map(s => s.trim().toLowerCase())
       .filter(Boolean);
-
+    
     this.symbolsInput = valid.join(',');
-
-    const allowed = new Set(valid);
-    this.miniTickers.set(this.miniTickers().filter(t => allowed.has(t.symbol)));
-
+    
+    // Se la stringa è vuota, pulisci tutto
+    if (valid.length === 0) {
+      this.onClearAll();
+      return;
+    }
+    
     if (this.wsOpen) {
-      this.stop();
-      this.startWebSocket();
+      this.api.updateWSSymbols(valid).subscribe(success => {
+        if (!success) {
+          this.stop();
+          this.startWebSocket();
+        }
+      });
     } else {
       this.refresh();
     }
+    
+    const allowed = new Set(valid);
+    this.miniTickers.set(this.miniTickers().filter(t => allowed.has(t.symbol)));
   }
 }

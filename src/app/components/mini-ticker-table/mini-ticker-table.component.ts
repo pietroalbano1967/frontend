@@ -1,9 +1,17 @@
-// Sostituisci la parte superiore del file con questo codice:
-import { Component, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { 
+  Component, 
+  Input, 
+  Output, 
+  EventEmitter, 
+  inject, 
+  computed, 
+  signal,
+  OnChanges,
+  SimpleChanges 
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MiniTicker } from '../../types/binance.types';
-import { AlertService } from '../../services/alert.service';
-import { PriceAlert } from '../../services/alert.service';
+import { AlertService, PriceAlert } from '../../services/alert.service';
 
 @Component({
   selector: 'app-mini-ticker-table',
@@ -13,80 +21,96 @@ import { PriceAlert } from '../../services/alert.service';
   styleUrls: ['./mini-ticker-table.component.scss']
 })
 export class MiniTickerTableComponent implements OnChanges {
-  @Input() tickers: MiniTicker[] = [];
-  @Input() title: string = 'MiniTicker Data';
-
-  sortedTickers: MiniTicker[] = [];
-  sortField: string = 'symbol';
-  sortDirection: 'asc' | 'desc' = 'asc';
+  private alertService = inject(AlertService);
   
-  activeAlerts: Map<string, {above: number[], below: number[]}> = new Map();
-
-  constructor(private alertService: AlertService) {}
-
-  // ... il resto del codice rimane invariato ...
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['tickers']) {
-      this.sortTickers(this.sortField, this.sortDirection);
-      this.updateActiveAlerts();
-    }
+  // Input come signal per la reattività
+  private _tickers = signal<MiniTicker[]>([]);
+  
+  @Input() 
+  set tickers(value: MiniTicker[]) {
+    this._tickers.set(value || []);
+  }
+  get tickers(): MiniTicker[] {
+    return this._tickers();
   }
   
-  private updateActiveAlerts() {
-    const alerts: PriceAlert[] = this.alertService.getAlerts()();
-    this.activeAlerts.clear();
+  @Input() title: string = 'MiniTicker Data';
+  @Output() tickerSelect = new EventEmitter<MiniTicker>();
+
+  // Segnali per lo stato interno
+  sortField = signal<string>('symbol');
+  sortDirection = signal<'asc' | 'desc'>('asc');
+
+  // Computed properties reattive
+  activeAlerts = computed(() => {
+    const alerts = this.alertService.getAlerts()();
+    const alertMap = new Map<string, { above: number[]; below: number[] }>();
     
     alerts.forEach((alert: PriceAlert) => {
       if (alert.active && !alert.triggered) {
         const symbol = alert.symbol.toLowerCase();
         
-        if (!this.activeAlerts.has(symbol)) {
-          this.activeAlerts.set(symbol, { above: [], below: [] });
+        if (!alertMap.has(symbol)) {
+          alertMap.set(symbol, { above: [], below: [] });
         }
         
-        const symbolAlerts = this.activeAlerts.get(symbol)!;
+        const symbolAlerts = alertMap.get(symbol)!;
         if (alert.condition === 'above') {
           symbolAlerts.above.push(alert.price);
         } else {
           symbolAlerts.below.push(alert.price);
         }
         
-        // Ordina i prezzi per una migliore visualizzazione
+        // Ordina i prezzi
         symbolAlerts.above.sort((a, b) => a - b);
         symbolAlerts.below.sort((a, b) => a - b);
       }
     });
-  }
-// Modifica il mini-ticker-table.component.ts per emettere l'evento
-@Output() tickerSelect = new EventEmitter<MiniTicker>();
+    
+    return alertMap;
+  });
 
-// Aggiungi questo metodo
-onTickerClick(ticker: MiniTicker) {
-  this.tickerSelect.emit(ticker);
-}
-  sortTickers(field: string, direction: 'asc' | 'desc' = 'asc') {
-    this.sortField = field;
-    this.sortDirection = direction;
-
-    this.sortedTickers = [...this.tickers].sort((a, b) => {
+  // Computed reattivo che dipende da _tickers signal
+  sortedTickers = computed(() => {
+    const field = this.sortField();
+    const direction = this.sortDirection();
+    const tickers = this._tickers(); // Usa il signal interno
+    
+    if (!tickers || tickers.length === 0) {
+      return [];
+    }
+    
+    return [...tickers].sort((a, b) => {
       let valueA: any, valueB: any;
 
       switch (field) {
         case 'symbol':
-          valueA = a.symbol; valueB = b.symbol; break;
+          valueA = a.symbol; 
+          valueB = b.symbol; 
+          break;
         case 'last_price':
-          valueA = a.last_price; valueB = b.last_price; break;
+          valueA = a.last_price; 
+          valueB = b.last_price; 
+          break;
         case 'high_price':
-          valueA = a.high_price; valueB = b.high_price; break;
+          valueA = a.high_price; 
+          valueB = b.high_price; 
+          break;
         case 'low_price':
-          valueA = a.low_price; valueB = b.low_price; break;
+          valueA = a.low_price; 
+          valueB = b.low_price; 
+          break;
         case 'volume':
-          valueA = a.volume; valueB = b.volume; break;
+          valueA = a.volume; 
+          valueB = b.volume; 
+          break;
         case 'event_time':
-          valueA = a.event_time; valueB = b.event_time; break;
+          valueA = a.event_time; 
+          valueB = b.event_time; 
+          break;
         default:
-          valueA = a.symbol; valueB = b.symbol;
+          valueA = a.symbol; 
+          valueB = b.symbol;
       }
 
       if (typeof valueA === 'string') {
@@ -99,20 +123,46 @@ onTickerClick(ticker: MiniTicker) {
           : valueB - valueA;
       }
     });
+  });
+
+  // Getter per il template
+  get sortedTickersArray(): MiniTicker[] {
+    return this.sortedTickers();
+  }
+
+  get activeAlertsMap(): Map<string, { above: number[]; below: number[] }> {
+    return this.activeAlerts();
+  }
+
+ ngOnChanges(changes: SimpleChanges) {
+    if (changes['tickers']) {
+      this._tickers.set(this.tickers);
+      
+      // Se i ticker sono vuoti, resetta l'ordinamento
+      if (this.tickers.length === 0) {
+        this.sortField.set('symbol');
+        this.sortDirection.set('asc');
+      }
+    }
+  }
+
+
+  onTickerClick(ticker: MiniTicker) {
+    this.tickerSelect.emit(ticker);
   }
 
   onSort(field: string) {
-    if (this.sortField === field) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    if (this.sortField() === field) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
     } else {
-      this.sortDirection = 'asc';
+      this.sortField.set(field);
+      this.sortDirection.set('asc');
     }
-    this.sortTickers(field, this.sortDirection);
   }
 
   getSortIcon(field: string): string {
-    if (this.sortField !== field) return '↕️';
-    return this.sortDirection === 'asc' ? '↑' : '↓';
+    if (this.sortField() !== field) return '↕️';
+    return this.sortDirection() === 'asc' ? '↑' : '↓';
   }
 
   getPriceChange(ticker: MiniTicker): number {
@@ -125,30 +175,26 @@ onTickerClick(ticker: MiniTicker) {
     return midPrice !== 0 ? ((ticker.last_price - midPrice) / midPrice) * 100 : 0;
   }
 
-    getAlertsForSymbol(symbol: string): {above: number[], below: number[]} {
-    return this.activeAlerts.get(symbol.toLowerCase()) || { above: [], below: [] };
+  getAlertsForSymbol(symbol: string): { above: number[]; below: number[] } {
+    return this.activeAlertsMap.get(symbol.toLowerCase()) || { above: [], below: [] };
   }
 
-  // Nuovo metodo per formattare i prezzi degli alert
-  formatAlertPrices(alerts: {above: number[], below: number[]}): string {
-    const parts = [];
-    
-    if (alerts.above.length > 0) {
-      const abovePrices = alerts.above.map(price => `↑$${price.toFixed(2)}`).join(' ');
-      parts.push(abovePrices);
-    }
-    
-    if (alerts.below.length > 0) {
-      const belowPrices = alerts.below.map(price => `↓$${price.toFixed(2)}`).join(' ');
-      parts.push(belowPrices);
-    }
-    
-    return parts.join(' ');
-  }
-
-  // Metodo per verificare se ci sono alert per un simbolo
   hasAlerts(symbol: string): boolean {
     const alerts = this.getAlertsForSymbol(symbol);
     return alerts.above.length > 0 || alerts.below.length > 0;
+  }
+
+  formatAlertTooltip(alerts: { above: number[]; below: number[] }): string {
+    const parts = [];
+    
+    if (alerts.above.length > 0) {
+      parts.push(`Above: ${alerts.above.map(p => `$${p.toFixed(2)}`).join(', ')}`);
+    }
+    
+    if (alerts.below.length > 0) {
+      parts.push(`Below: ${alerts.below.map(p => `$${p.toFixed(2)}`).join(', ')}`);
+    }
+    
+    return parts.join('\n');
   }
 }
