@@ -1,11 +1,20 @@
 <div class="alert-manager">
-  <h3>💰 Gestione Alert Prezzi</h3>
+  <h3>💰 Gestione Alert Prezzi 
+    <span *ngIf="filterBySymbol" class="filter-info">
+      - Filtro: {{ filterBySymbol.toUpperCase() }}
+    </span>
+  </h3>
   
   <!-- Form per creare nuovo alert -->
   <div class="alert-form">
     <div class="form-group">
       <label>Simbolo:</label>
-      <input type="text" [(ngModel)]="newAlert.symbol" placeholder="BTCUSDT" class="form-input">
+      <input 
+        type="text" 
+        [(ngModel)]="newAlert.symbol" 
+        [value]="filterBySymbol || newAlert.symbol"
+        placeholder="BTCUSDT" 
+        class="form-input">
     </div>
     
     <div class="form-group">
@@ -26,9 +35,9 @@
 
   <!-- Lista alert attivi -->
   <div class="alerts-list">
-    <h4>Alert Attivi ({{alerts().length}})</h4>
+    <h4>Alert Attivi ({{filteredAlerts.length}})</h4>
     
-    <div *ngFor="let alert of alerts()" class="alert-item" [class.triggered]="alert.triggered">
+    <div *ngFor="let alert of filteredAlerts" class="alert-item" [class.triggered]="alert.triggered">
       <div class="alert-info">
         <span class="symbol">{{alert.symbol}}</span>
         <span class="condition">{{alert.condition === 'above' ? '≥' : '≤'}}</span>
@@ -48,8 +57,9 @@
       </div>
     </div>
 
-    <div *ngIf="alerts().length === 0" class="no-alerts">
-      <p>Nessun alert configurato</p>
+    <div *ngIf="filteredAlerts.length === 0" class="no-alerts">
+      <p *ngIf="filterBySymbol">Nessun alert configurato per {{filterBySymbol.toUpperCase()}}</p>
+      <p *ngIf="!filterBySymbol">Nessun alert configurato</p>
     </div>
   </div>
 </div>

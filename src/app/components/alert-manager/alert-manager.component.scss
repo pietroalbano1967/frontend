@@ -140,3 +140,21 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+/* Aggiungi a alert-manager.component.scss */
+.filter-info {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: normal;
+  background: #e3f2fd;
+  padding: 4px 8px;
+  border-radius: 12px;
+  margin-left: 10px;
+}
+
+.alert-form {
+  /* Mantieni gli stili esistenti e aggiungi: */
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}

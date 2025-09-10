@@ -10,7 +10,10 @@ import { AlertManagerComponent } from '../alert-manager/alert-manager.component'
 import { AlertService } from '../../services/alert.service';
 import { SymbolSelectorComponent } from '../symbol-selector/symbol-selector.component';
 import { MiniTickerTableComponent } from '../mini-ticker-table/mini-ticker-table.component';
-
+import { AnalyticsService } from '../../services/analytics.service';
+import { NotificationService } from '../../services/notification.service';
+import { AnalyticsDashboardComponent } from '../analytics-dashboard/analytics-dashboard.component';
+import { NotificationCenterComponent } from '../notification-center/notification-center.component';
 const MAX_CHARTS = 2;
 
 @Component({
@@ -23,7 +26,9 @@ const MAX_CHARTS = 2;
     PriceChartComponent,
     AlertManagerComponent,
     SymbolSelectorComponent,
-    MiniTickerTableComponent
+    MiniTickerTableComponent,
+    NotificationCenterComponent,    // Aggiungi questa riga
+    AnalyticsDashboardComponent     // Aggiungi questa riga
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -31,6 +36,8 @@ const MAX_CHARTS = 2;
 export class DashboardComponent implements OnInit, OnDestroy {
   private api = inject(BinanceApiService);
   private alertService = inject(AlertService);
+  private analyticsService = inject(AnalyticsService);
+  private notificationService = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   private isBrowser: boolean;
 
@@ -43,6 +50,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   miniTickers = signal<MiniTicker[]>([]);
   chartLabels = signal<string[]>([]);
   priceHistory = signal<Record<string, number[]>>({});
+  selectedTicker: string = '';
 
   private wsSubscription: Subscription | null = null;
   private subscriptions: Subscription[] = [];
@@ -56,6 +64,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.refresh();
+    this.requestNotificationPermission();
   }
 
   ngOnDestroy() {
@@ -64,6 +73,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.subscriptions = [];
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
+    }
+  }
+
+  private requestNotificationPermission(): void {
+    if (this.isBrowser && 'Notification' in window) {
+      this.notificationService.requestNotificationPermission();
     }
   }
 
@@ -189,6 +204,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.miniTickers.set([...current, newData]);
     }
 
+    // Aggiorna analytics
+    this.analyticsService.updatePrice(newData.symbol, newData.last_price);
+
     const chartSet = new Set(this.chartSymbols());
     if (chartSet.has(newData.symbol)) {
       this.updateChartData(newData);
@@ -242,6 +260,22 @@ Prezzo attuale: $${currentPrice}`;
     this.playAlertSound();
   }
 
+  // Metodo per selezionare un ticker
+  selectTicker(ticker: MiniTicker) {
+    this.selectedTicker = ticker.symbol;
+  }
+
+  // Metodo per ottenere i dettagli di un ticker specifico
+  getTickerDetails(symbol: string): MiniTicker | null {
+    return this.miniTickers().find(t => t.symbol === symbol) || null;
+  }
+
+  // Metodo per calcolare la percentuale di cambiamento del prezzo
+  getPriceChangePercent(ticker: MiniTicker): number {
+    const midPrice = (ticker.high_price + ticker.low_price) / 2;
+    return midPrice !== 0 ? ((ticker.last_price - midPrice) / midPrice) * 100 : 0;
+  }
+
   private playAlertSound() {
     if (!this.isBrowser) return;
     try {
@@ -281,7 +315,7 @@ Prezzo attuale: $${currentPrice}`;
 
     if (this.wsOpen) {
       this.stop();
-      this.startWebSocket(); // Usa startWebSocket invece di start
+      this.startWebSocket();
     } else {
       this.refresh();
     }

@@ -1,11 +1,14 @@
+<!-- dashboard.component.html -->
 <div class="dashboard-container">
+  
   <!-- Header -->
   <div class="header">
     <div class="header-left">
       <h1>Binance Bot Dashboard</h1>
-      <p class="subtitle">Monitoraggio Multi-Simbolo in Tempo Reale</p>
+      <p class="subtitle">Monitoraggio in Tempo Reale</p>
     </div>
     <div class="header-right">
+      <app-notification-center></app-notification-center>
       <div class="connection-status" [class.connected]="wsOpen">
         <span class="status-dot"></span>
         {{ wsOpen ? 'CONNESSO' : 'DISCONNESSO' }}
@@ -16,8 +19,34 @@
   <!-- Symbol Selector -->
   <app-symbol-selector (symbolsChange)="onSymbolsChange($event)"></app-symbol-selector>
 
-  <!-- Alert Manager -->
-  <app-alert-manager></app-alert-manager>
+  <!-- Ticker Selezionato -->
+  <div class="selected-ticker-section" *ngIf="selectedTicker">
+    <div class="ticker-header">
+      <h2>{{ selectedTicker.toUpperCase() }} - Dettaglio</h2>
+      <button class="btn btn-sm btn-outline" (click)="selectedTicker = ''">Chiudi Dettaglio</button>
+    </div>
+    
+    <app-alert-manager [filterBySymbol]="selectedTicker"></app-alert-manager>
+
+    <app-price-chart
+      *ngIf="getPriceHistory(selectedTicker).length > 0"
+      [title]="selectedTicker.toUpperCase() + ' Price History'"
+      [data]="getPriceHistory(selectedTicker)"
+      [labels]="chartLabels()"
+      [symbol]="selectedTicker.toUpperCase()">
+    </app-price-chart>
+
+    <div class="ticker-details" *ngIf="getTickerDetails(selectedTicker) as tickerData">
+      <div class="detail-card">
+        <span class="label">Prezzo corrente:</span>
+        <span class="value" [class.positive]="getPriceChangePercent(tickerData) > 0" 
+              [class.negative]="getPriceChangePercent(tickerData) < 0">
+          ${{ tickerData.last_price | number:'1.2-2' }}
+        </span>
+      </div>
+      <!-- Aggiungi altri detail-card qui -->
+    </div>
+  </div>
 
   <!-- Controls -->
   <div class="controls-section">
@@ -29,19 +58,12 @@
     </div>
 
     <div class="buttons-group">
-      <button
-        class="btn btn-primary"
-        (click)="start()"
-        [disabled]="wsOpen || !symbolsInput"
-        [class.loading]="isConnecting"
-      >
+      <button class="btn btn-primary" (click)="start()" [disabled]="wsOpen || !symbolsInput">
         {{ isConnecting ? 'CONNESSIONE...' : (wsOpen ? 'CONNESSO' : 'CONNETTI WS') }}
       </button>
-
       <button class="btn btn-secondary" (click)="refresh()" [disabled]="!symbolsInput">
         AGGIORNA DATI
       </button>
-
       <button class="btn btn-danger" (click)="stop()" [disabled]="!wsOpen">
         DISCONNETTI
       </button>
@@ -64,23 +86,29 @@
     </div>
   </div>
 
-  <!-- Charts (seguono i simboli selezionati, max 2) -->
-  <div class="charts-section">
+  <!-- Charts Section -->
+  <div class="charts-section" *ngIf="!selectedTicker">
     <ng-container *ngFor="let sym of chartSymbols()">
       <app-price-chart
-  *ngIf="getPriceHistory(sym).length > 0"
-  [title]="(sym.toUpperCase()) + ' Price History'"
-  [data]="getPriceHistory(sym)"
-  [labels]="chartLabels()"
-  [symbol]="sym.toUpperCase()">
-</app-price-chart>
+        *ngIf="getPriceHistory(sym).length > 0"
+        [title]="(sym.toUpperCase()) + ' Price History'"
+        [data]="getPriceHistory(sym)"
+        [labels]="chartLabels()"
+        [symbol]="sym.toUpperCase()">
+      </app-price-chart>
     </ng-container>
   </div>
 
-  <!-- MiniTicker Table: collegata alla selezione -->
+  <!-- Analytics Section -->
+  <div class="analytics-section" *ngIf="!selectedTicker">
+    <app-analytics-dashboard [tickers]="miniTickers()"></app-analytics-dashboard>
+  </div>
+
+  <!-- MiniTicker Table -->
   <app-mini-ticker-table
     [tickers]="miniTickers()"
-    [title]="'Dati in Tempo Reale (' + symbolsInput + ')'">
+    [title]="'Dati in Tempo Reale'"
+    (tickerSelect)="selectTicker($event)">
   </app-mini-ticker-table>
 
   <!-- Live Feed -->
@@ -93,4 +121,5 @@
       <pre class="feed-content">{{ lastMsg | json }}</pre>
     </div>
   </div>
+
 </div>

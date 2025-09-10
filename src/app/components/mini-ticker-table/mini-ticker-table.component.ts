@@ -1,4 +1,5 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+// Sostituisci la parte superiore del file con questo codice:
+import { Component, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MiniTicker } from '../../types/binance.types';
 import { AlertService } from '../../services/alert.service';
@@ -19,10 +20,11 @@ export class MiniTickerTableComponent implements OnChanges {
   sortField: string = 'symbol';
   sortDirection: 'asc' | 'desc' = 'asc';
   
-  // Cambia la struttura per memorizzare i prezzi degli alert
   activeAlerts: Map<string, {above: number[], below: number[]}> = new Map();
 
   constructor(private alertService: AlertService) {}
+
+  // ... il resto del codice rimane invariato ...
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['tickers']) {
@@ -30,7 +32,7 @@ export class MiniTickerTableComponent implements OnChanges {
       this.updateActiveAlerts();
     }
   }
-
+  
   private updateActiveAlerts() {
     const alerts: PriceAlert[] = this.alertService.getAlerts()();
     this.activeAlerts.clear();
@@ -56,7 +58,13 @@ export class MiniTickerTableComponent implements OnChanges {
       }
     });
   }
+// Modifica il mini-ticker-table.component.ts per emettere l'evento
+@Output() tickerSelect = new EventEmitter<MiniTicker>();
 
+// Aggiungi questo metodo
+onTickerClick(ticker: MiniTicker) {
+  this.tickerSelect.emit(ticker);
+}
   sortTickers(field: string, direction: 'asc' | 'desc' = 'asc') {
     this.sortField = field;
     this.sortDirection = direction;

@@ -198,3 +198,16 @@
     }
   }
 }
+/* Aggiungi a mini-ticker-table.component.scss */
+.ticker-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ticker-row:hover {
+  background-color: #e3f2fd !important;
+}
+
+.ticker-row:active {
+  background-color: #bbdefb !important;
+}

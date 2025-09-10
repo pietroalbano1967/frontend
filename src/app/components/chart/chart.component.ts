@@ -178,7 +178,7 @@ export class PriceChartComponent implements OnChanges {
 
   private getAlertsForSymbol(): PriceAlert[] {
     const allAlerts = this.alertService.getAlerts()();
-    return allAlerts.filter(alert => 
+    return allAlerts.filter((alert: PriceAlert) => 
       alert.symbol.toLowerCase() === this.symbol.toLowerCase() && 
       alert.active && 
       !alert.triggered

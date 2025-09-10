@@ -1,5 +1,7 @@
-import { Injectable, signal, Inject, PLATFORM_ID } from '@angular/core';
+// alert.service.ts - VERSIONE COMPLETA CORRETTA
+import { Injectable, Inject, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { NotificationService } from './notification.service';
 
 export interface PriceAlert {
   id: string;
@@ -15,13 +17,13 @@ export interface PriceAlert {
 export class AlertService {
   private alerts = signal<PriceAlert[]>([]);
   private isBrowser: boolean;
+  private notificationService = inject(NotificationService);
 
   constructor(@Inject(PLATFORM_ID) platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
     this.loadAlerts();
   }
 
-  // Crea un nuovo alert
   createAlert(symbol: string, condition: 'above' | 'below', price: number): PriceAlert {
     const newAlert: PriceAlert = {
       id: this.generateId(),
@@ -39,13 +41,11 @@ export class AlertService {
     return newAlert;
   }
 
-  // Rimuovi un alert
   removeAlert(id: string): void {
     this.alerts.set(this.alerts().filter(alert => alert.id !== id));
     this.saveAlerts();
   }
 
-  // Aggiorna un alert
   updateAlert(id: string, updates: Partial<PriceAlert>): void {
     this.alerts.set(this.alerts().map(alert => 
       alert.id === id ? { ...alert, ...updates } : alert
@@ -53,7 +53,6 @@ export class AlertService {
     this.saveAlerts();
   }
 
-  // Controlla tutti gli alert per un simbolo e prezzo
   checkAlerts(symbol: string, currentPrice: number): PriceAlert[] {
     const triggeredAlerts: PriceAlert[] = [];
     
@@ -73,20 +72,28 @@ export class AlertService {
     return triggeredAlerts;
   }
 
-  // Attiva un alert
   private triggerAlert(id: string): void {
     this.alerts.set(this.alerts().map(alert => 
       alert.id === id ? { ...alert, triggered: true } : alert
     ));
     this.saveAlerts();
+    
+    const alert = this.alerts().find(a => a.id === id);
+    if (alert) {
+      this.notificationService.addNotification({
+        type: 'alert',
+        title: `Alert Attivato: ${alert.symbol}`,
+        message: `${alert.symbol} ha ${alert.condition === 'above' ? 'superato' : 'raggiunto'} $${alert.price}`,
+        symbol: alert.symbol,
+        price: alert.price
+      });
+    }
   }
 
-  // Getter per gli alert
   getAlerts() {
     return this.alerts.asReadonly();
   }
 
-  // Salva gli alert nel localStorage (solo browser)
   private saveAlerts(): void {
     if (this.isBrowser) {
       try {
@@ -97,14 +104,12 @@ export class AlertService {
     }
   }
 
-  // Carica gli alert dal localStorage (solo browser)
   private loadAlerts(): void {
     if (this.isBrowser) {
       try {
         const saved = localStorage.getItem('priceAlerts');
         if (saved) {
           const alerts = JSON.parse(saved);
-          // Converti le stringhe date in oggetti Date
           const parsedAlerts = alerts.map((alert: any) => ({
             ...alert,
             createdAt: new Date(alert.createdAt)
@@ -117,7 +122,6 @@ export class AlertService {
     }
   }
 
-  // Genera ID unico
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }

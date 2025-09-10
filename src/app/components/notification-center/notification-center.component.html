@@ -1,0 +1,52 @@
+<!-- notification-center.component.html - CORRETTO -->
+<div class="notification-center">
+  <button class="notification-bell" (click)="togglePanel()">
+    🔔
+    <span *ngIf="unreadCount() > 0" class="badge">{{ unreadCount() }}</span>
+  </button>
+
+  <div *ngIf="isOpen" class="notification-panel">
+    <div class="panel-header">
+      <h3>Notifiche</h3>
+      <div class="panel-actions">
+        <button (click)="markAllAsRead()" class="btn-sm">Segna tutte come lette</button>
+        <button (click)="clearAll()" class="btn-sm btn-danger">Pulisci tutto</button>
+      </div>
+    </div>
+
+    <div class="notifications-list">
+      <div *ngFor="let notification of notifications()" 
+           class="notification-item" 
+           [class.unread]="!notification.read"
+           (click)="markAsRead(notification.id)">
+        
+        <div class="notification-icon">
+          {{ getNotificationIcon(notification.type) }}
+        </div>
+        
+        <div class="notification-content">
+          <div class="notification-title">{{ notification.title }}</div>
+          <div class="notification-message">{{ notification.message }}</div>
+          <div class="notification-time">
+            {{ notification.timestamp | date:'dd/MM/yyyy HH:mm' }}
+            <span *ngIf="notification.symbol" class="symbol">
+              • {{ notification.symbol.toUpperCase() }}
+            </span>
+            <span *ngIf="notification.price" class="price">
+              • ${{ notification.price | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <button (click)="removeNotification(notification.id); $event.stopPropagation()" 
+                class="delete-btn">
+          ×
+        </button>
+      </div>
+
+      <div *ngIf="notifications().length === 0" class="empty-state">
+        <p>Nessuna notifica</p>
+      </div>
+    </div>
+  </div>
+</div>

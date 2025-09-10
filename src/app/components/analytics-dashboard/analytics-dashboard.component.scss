@@ -1,0 +1,146 @@
+// src/app/components/analytics-dashboard/analytics-dashboard.component.scss
+.analytics-dashboard {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  
+  h3 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    font-size: 18px;
+  }
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  
+  p {
+    margin: 0;
+    font-style: italic;
+  }
+}
+
+.analysis-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-left: 4px solid #007bff;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  
+  .symbol {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 16px;
+  }
+  
+  .trend {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    
+    &.trend-bullish {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    &.trend-bearish {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    &.trend-neutral {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+  }
+}
+
+.analysis-content {
+  .price-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    
+    .current-price {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    
+    .price-change {
+      font-size: 14px;
+      font-weight: 500;
+      
+      &.positive {
+        color: #28a745;
+      }
+      
+      &.negative {
+        color: #dc3545;
+      }
+    }
+  }
+}
+
+.technical-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    
+    .label {
+      font-size: 11px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+    
+    .value {
+      font-size: 12px;
+      color: #2c3e50;
+      font-weight: 600;
+      
+      .level {
+        display: inline-block;
+        margin-right: 8px;
+        padding: 2px 6px;
+        background: #e9ecef;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .technical-info {
+    grid-template-columns: 1fr;
+  }
+  
+  .analysis-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

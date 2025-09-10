@@ -36,7 +36,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let ticker of sortedTickers" class="ticker-row">
+        <tr *ngFor="let ticker of sortedTickers" class="ticker-row" (click)="onTickerClick(ticker)">
           <td class="symbol-cell">
             <span class="symbol-badge">{{ ticker.symbol.toUpperCase() }}</span>
           </td>
