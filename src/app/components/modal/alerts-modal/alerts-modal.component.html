@@ -1,0 +1,8 @@
+<!-- alerts-modal.component.html -->
+<app-modal-container 
+  title="Gestione Alert Prezzi {{selectedSymbol ? '- ' + selectedSymbol.toUpperCase() : ''}}"
+  size="lg"
+  (closed)="onClose()">
+  
+  <app-alert-manager [filterBySymbol]="selectedSymbol"></app-alert-manager>
+</app-modal-container>

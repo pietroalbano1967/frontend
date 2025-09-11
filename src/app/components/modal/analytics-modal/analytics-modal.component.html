@@ -1,0 +1,8 @@
+<!-- analytics-modal.component.html -->
+<app-modal-container 
+  title="Analisi Tecnica {{selectedSymbol ? '- ' + selectedSymbol.toUpperCase() : ''}}"
+  size="xl"
+  (closed)="onClose()">
+  
+  <app-analytics-dashboard [selectedSymbol]="selectedSymbol"></app-analytics-dashboard>
+</app-modal-container>

@@ -1,3 +1,4 @@
+// mini-ticker-table.component.ts - CORREZIONE COMPLETA
 import { 
   Component, 
   Input, 
@@ -43,7 +44,8 @@ export class MiniTickerTableComponent implements OnChanges {
 
   // Computed properties reattive
   activeAlerts = computed(() => {
-    const alerts = this.alertService.getAlerts()();
+    // CORREZIONE: usa getAlertsSnapshot() invece di getAlerts()()
+    const alerts = this.alertService.getAlertsSnapshot();
     const alertMap = new Map<string, { above: number[]; below: number[] }>();
     
     alerts.forEach((alert: PriceAlert) => {
@@ -62,8 +64,8 @@ export class MiniTickerTableComponent implements OnChanges {
         }
         
         // Ordina i prezzi
-        symbolAlerts.above.sort((a, b) => a - b);
-        symbolAlerts.below.sort((a, b) => a - b);
+        symbolAlerts.above.sort((a: number, b: number) => a - b);
+        symbolAlerts.below.sort((a: number, b: number) => a - b);
       }
     });
     
@@ -74,7 +76,7 @@ export class MiniTickerTableComponent implements OnChanges {
   sortedTickers = computed(() => {
     const field = this.sortField();
     const direction = this.sortDirection();
-    const tickers = this._tickers(); // Usa il signal interno
+    const tickers = this._tickers();
     
     if (!tickers || tickers.length === 0) {
       return [];
@@ -134,18 +136,16 @@ export class MiniTickerTableComponent implements OnChanges {
     return this.activeAlerts();
   }
 
- ngOnChanges(changes: SimpleChanges) {
+  ngOnChanges(changes: SimpleChanges) {
     if (changes['tickers']) {
       this._tickers.set(this.tickers);
       
-      // Se i ticker sono vuoti, resetta l'ordinamento
       if (this.tickers.length === 0) {
         this.sortField.set('symbol');
         this.sortDirection.set('asc');
       }
     }
   }
-
 
   onTickerClick(ticker: MiniTicker) {
     this.tickerSelect.emit(ticker);

@@ -1,10 +1,11 @@
+<!-- analytics-dashboard.component.html - VERSIONE CORRETTA -->
 <div class="analytics-dashboard">
   <h3>
     Analisi Tecnica
     <span *ngIf="selectedSymbol" class="filter-info">
       - {{ selectedSymbol.toUpperCase() }}
     </span>
-    <button class="btn btn-sm refresh-btn" (click)="updateAnalyses()" title="Aggiorna analisi">
+    <button class="btn btn-sm refresh-btn" (click)="refreshAnalyses()" title="Aggiorna analisi">
       🔄
     </button>
   </h3>
@@ -28,49 +29,50 @@
       <div class="analysis-header">
         <span class="symbol">{{ analysis.symbol.toUpperCase() }}</span>
         <span class="trend" [class]="getTrendClass(analysis.trend)">
-          {{ getTrendIcon(analysis.trend) }} {{ analysis.trend }}
+          {{ getTrendIcon(analysis.trend) }} {{ analysis.trend || 'neutral' }}
         </span>
       </div>
       
       <div class="analysis-content">
         <div class="price-info">
-          <span class="current-price">${{ analysis.lastPrice | number:'1.2-2' }}</span>
+          <span class="current-price">${{ analysis.currentPrice | number:'1.2-2' }}</span>
           <span class="price-change" 
-                [class.positive]="analysis.priceChange > 0" 
-                [class.negative]="analysis.priceChange < 0">
-            {{ analysis.priceChange > 0 ? '+' : '' }}{{ analysis.priceChange | number:'1.2-2' }}%
+                [class.positive]="analysis.priceChangePercent24h > 0" 
+                [class.negative]="analysis.priceChangePercent24h < 0">
+            {{ analysis.priceChangePercent24h > 0 ? '+' : '' }}{{ analysis.priceChangePercent24h | number:'1.2-2' }}%
           </span>
         </div>
         
         <div class="technical-info">
           <div class="info-item">
-            <span class="label">RSI:</span>
-            <span class="value" [class.overbought]="analysis.rsi > 70" 
-                  [class.oversold]="analysis.rsi < 30">
-              {{ analysis.rsi | number:'1.0-0' }}
+            <span class="label">Volatilità:</span>
+            <span class="value">
+              {{ analysis.volatility | number:'1.4-4' }}
             </span>
           </div>
           
           <div class="info-item">
-            <span class="label">Forza:</span>
-            <span class="value" [class]="getStrengthClass(analysis.strength)">
-              {{ analysis.strength | number:'1.0-0' }}%
+            <span class="label">Supporto:</span>
+            <span class="value">
+              ${{ analysis.supportLevels[0] | number:'1.2-2' }}
             </span>
           </div>
           
           <div class="info-item">
-            <span class="label">Volume:</span>
-            <span class="value">{{ analysis.volume | number:'1.0-0' }}</span>
+            <span class="label">Resistenza:</span>
+            <span class="value">
+              ${{ analysis.resistanceLevels[0] | number:'1.2-2' }}
+            </span>
           </div>
           
           <div class="info-item">
-            <span class="label">Segnale:</span>
-            <span class="value signal">{{ analysis.signal || 'Neutrale' }}</span>
+            <span class="label">Volume 24h:</span>
+            <span class="value">{{ analysis.volume24h | number:'1.0-0' }}</span>
           </div>
         </div>
         
         <div class="time-info">
-          <small>Aggiornato: {{ analysis.timestamp | date:'HH:mm:ss' }}</small>
+          <small>Ultimo aggiornamento</small>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
-import { Component, inject, Input, OnChanges, ChangeDetectorRef,SimpleChanges, signal, computed } from '@angular/core';
+// analytics-dashboard.component.ts - VERSIONE CORRETTA
+import { Component, inject, Input, OnChanges, ChangeDetectorRef, SimpleChanges, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AnalyticsService } from '../../services/analytics.service';
 import { MiniTicker } from '../../types/binance.types';
@@ -12,47 +13,64 @@ import { MiniTicker } from '../../types/binance.types';
 })
 export class AnalyticsDashboardComponent implements OnChanges {
   private analyticsService = inject(AnalyticsService);
-   private cdr = inject(ChangeDetectorRef); // Aggiungi questo
+  private cdr = inject(ChangeDetectorRef);
 
   @Input() tickers: MiniTicker[] = [];
   @Input() selectedSymbol: string = '';
 
-  // Usa signals per una migliore reattività
-  isLoading = signal(true);
-  filteredAnalyses = signal<any[]>([]);
+  // Signals per gestire lo stato
+  isLoading = signal(false);
+  private refreshTrigger = signal(0);
 
-  // Computed property per le analisi
+  // Computed property reattiva per le analisi
   analyses = computed(() => {
+    // Trigger per forzare l'aggiornamento
+    this.refreshTrigger();
+    
     const allAnalyses = this.analyticsService.getAllAnalyses();
     
     if (this.selectedSymbol) {
-      // Filtra per simbolo selezionato
       return allAnalyses.filter(analysis => 
         analysis.symbol.toLowerCase() === this.selectedSymbol.toLowerCase()
       );
     } else {
-      // Mostra tutte le analisi
       return allAnalyses;
     }
   });
 
+  // Effect per reagire ai cambiamenti delle analisi
+  private analysisEffect = effect(() => {
+    this.analyses(); // Forza l'aggiornamento
+    this.cdr.detectChanges();
+  });
+
   ngOnChanges(changes: SimpleChanges) {
     if (changes['selectedSymbol'] || changes['tickers']) {
-      this.updateFilteredAnalyses();
+      this.refreshAnalyses();
     }
   }
 
-  private updateFilteredAnalyses() {
+  // Metodo per aggiornare le analisi
+  updateAnalyses() {
     this.isLoading.set(true);
     
+    // Forza il refresh delle analisi
+    this.refreshTrigger.set(Date.now());
+    
     setTimeout(() => {
-      this.filteredAnalyses.set(this.analyses());
       this.isLoading.set(false);
+      this.cdr.detectChanges();
     }, 100);
   }
 
+  // Metodo per refresh completo
+  refreshAnalyses() {
+    this.analyticsService.refreshAnalyses();
+    this.updateAnalyses();
+  }
+
   getAnalyses() {
-    return this.filteredAnalyses();
+    return this.analyses();
   }
 
   getTrendIcon(trend: string): string {
@@ -74,55 +92,10 @@ export class AnalyticsDashboardComponent implements OnChanges {
   }
 
   getStrengthClass(strength: number): string {
+    if (!strength) return 'strength-unknown';
     if (strength >= 80) return 'strength-strong';
     if (strength >= 60) return 'strength-medium';
     if (strength >= 40) return 'strength-weak';
     return 'strength-very-weak';
   }
-
-  getAnalysisForSymbol(symbol: string): any {
-    return this.filteredAnalyses().find(analysis => 
-      analysis.symbol.toLowerCase() === symbol.toLowerCase()
-    );
-  }
-
-  hasAnalyses(): boolean {
-    return this.filteredAnalyses().length > 0;
-  }
-
-  refreshAnalyses() {
-    this.analyticsService.refreshAnalyses();
-    this.updateFilteredAnalyses();
-  }
-
-  // Nuovo metodo per gestire il caso senza analisi
-  getNoAnalysesMessage(): string {
-    if (this.selectedSymbol) {
-      return `Nessuna analisi disponibile per ${this.selectedSymbol.toUpperCase()}`;
-    }
-    return 'Nessuna analisi disponibile. Seleziona dei simboli per vedere le analisi.';
-  }
-
-  // Metodo per ottenere il numero totale di analisi
-  getTotalAnalysesCount(): number {
-    return this.filteredAnalyses().length;
-  }
-
-  // Metodo per ottenere analisi per trend
-  getAnalysesByTrend(trend: string): any[] {
-    return this.filteredAnalyses().filter(analysis => analysis.trend === trend);
-  }
-  
-  updateAnalyses() {
-    this.isLoading.set(true);
-    
-    setTimeout(() => {
-      this.filteredAnalyses.set(this.analyses());
-      this.isLoading.set(false);
-      
-      // Forza il change detection
-      this.cdr.detectChanges();
-    }, 100);
-  }
-
 }

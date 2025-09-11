@@ -1,0 +1,16 @@
+<!-- modal-container.component.html -->
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-content" [class]="'modal-' + size" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ title }}</h3>
+      <button class="modal-close" (click)="close()" aria-label="Chiudi">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</div>

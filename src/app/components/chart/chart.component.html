@@ -1,0 +1,14 @@
+<div class="chart-container">
+  <div class="chart-header">
+    <h3>{{ title }}</h3>
+    <span class="current-price" [class.positive]="getPriceChange() > 0" [class.negative]="getPriceChange() < 0">
+      ${{ getCurrentPrice() | number:'1.2-2' }}
+      <span class="price-change">
+        ({{ getPriceChange() > 0 ? '+' : '' }}{{ getPriceChangePercent() | number:'1.2-2' }}%)
+      </span>
+    </span>
+  </div>
+  <div class="chart-wrapper">
+    <canvas #chartCanvas></canvas>
+  </div>
+</div>

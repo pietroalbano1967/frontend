@@ -8,18 +8,27 @@
       <p class="subtitle">Monitoraggio in Tempo Reale</p>
     </div>
     <div class="header-right">
-      <app-notification-center></app-notification-center>
-      <div class="connection-status" [class.connected]="wsOpen">
-        <span class="status-dot"></span>
-        {{ wsOpen ? 'CONNESSO' : 'DISCONNESSO' }}
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="openAnalyticsModal()">
+          📊 Analisi Tecnica
+        </button>
+        <button class="btn btn-secondary" (click)="openAlertsModal()">
+          🔔 Gestione Alert
+        </button>
+        <app-notification-center></app-notification-center>
+        <div class="connection-status" [class.connected]="wsOpen">
+          <span class="status-dot"></span>
+          {{ wsOpen ? 'CONNESSO' : 'DISCONNESSO' }}
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Symbol Selector -->
   <app-symbol-selector 
-  (symbolsChange)="onSymbolsChange($event)"
-  (clearAll)="onClearAll()"> <!-- Aggiungi questo -->
-</app-symbol-selector>
+    (symbolsChange)="onSymbolsChange($event)"
+    (clearAll)="onClearAll()">
+  </app-symbol-selector>
 
   <!-- Controls Section -->
   <div class="controls-section">
@@ -63,7 +72,17 @@
   <div class="selected-ticker-section" *ngIf="selectedTicker">
     <div class="ticker-header">
       <h2>{{ selectedTicker.toUpperCase() }} - Dettaglio</h2>
-      <button class="btn btn-sm btn-outline" (click)="clearSelection()">Chiudi Dettaglio</button>
+      <div class="ticker-actions">
+        <button class="btn btn-sm btn-secondary" (click)="openAnalyticsModal(selectedTicker)">
+          📊 Analisi
+        </button>
+        <button class="btn btn-sm btn-secondary" (click)="openAlertsModal(selectedTicker)">
+          🔔 Alert
+        </button>
+        <button class="btn btn-sm btn-outline" (click)="clearSelection()">
+          Chiudi Dettaglio
+        </button>
+      </div>
     </div>
     
     <div class="ticker-content">
@@ -99,13 +118,10 @@
         </div>
       </div>
 
-      <!-- Alert Manager -->
-      <app-alert-manager [filterBySymbol]="selectedTicker"></app-alert-manager>
-
       <!-- Price Chart -->
       <app-price-chart
         *ngIf="getPriceHistory(selectedTicker).length > 0"
-        [title]="selectedTicker.toUpperCase() + ' Price History'"
+        [title]="selectedTicker.toUpperCase()"
         [data]="getPriceHistory(selectedTicker)"
         [labels]="chartLabels()"
         [symbol]="selectedTicker.toUpperCase()">
@@ -113,40 +129,32 @@
     </div>
   </div>
 
-  <!-- Main Content (quando nessun ticker è selezionato) -->
+  <!-- Main Content -->
   <div *ngIf="!selectedTicker">
     <!-- Charts Section -->
     <div class="charts-section">
       <div class="section-header">
-        <h3>Grafici Prezzi</h3>
+        <h3>Grafici Prezzi in Tempo Reale</h3>
+        <span class="section-info">
+          {{ chartSymbols().length }} grafici attivi
+        </span>
       </div>
+      
       <div class="charts-grid">
         <ng-container *ngFor="let sym of chartSymbols()">
           <app-price-chart
             *ngIf="getPriceHistory(sym).length > 0"
-            [title]="sym.toUpperCase() + ' Price History'"
+            [title]="sym.toUpperCase()"
             [data]="getPriceHistory(sym)"
             [labels]="chartLabels()"
             [symbol]="sym.toUpperCase()">
           </app-price-chart>
         </ng-container>
       </div>
-    </div>
-
-    <!-- Analytics Section -->
-    <div class="analytics-section">
-      <div class="section-header">
-        <h3>Analisi Tecnica</h3>
-        <div class="section-controls">
-          <button class="btn btn-sm" (click)="showAllAnalytics = !showAllAnalytics">
-            {{ showAllAnalytics ? 'Nascondi' : 'Mostra' }} Tutte le Analisi
-          </button>
-        </div>
+      
+      <div *ngIf="chartSymbols().length === 0" class="no-charts">
+        <p>Seleziona dei simboli per vedere i grafici in tempo reale</p>
       </div>
-      <app-analytics-dashboard 
-        [tickers]="miniTickers()" 
-        [selectedSymbol]="showAllAnalytics ? '' : analyticsSymbol">
-      </app-analytics-dashboard>
     </div>
 
     <!-- MiniTicker Table -->
@@ -166,7 +174,7 @@
     </div>
   </div>
 
-  <!-- Live Feed (sempre visibile) -->
+  <!-- Live Feed -->
   <div class="feed-section">
     <div class="section-header">
       <h3>Live WebSocket Feed</h3>
@@ -178,5 +186,24 @@
       <pre class="feed-content">{{ lastMsg | json }}</pre>
     </div>
   </div>
+
+  <!-- Modali -->
+  @if (showAnalyticsModal) {
+    <app-modal-container 
+      title="Analisi Tecnica {{modalSymbol ? '- ' + modalSymbol.toUpperCase() : ''}}"
+      size="xl"
+      (closed)="closeModals()">
+      <app-analytics-dashboard [selectedSymbol]="modalSymbol"></app-analytics-dashboard>
+    </app-modal-container>
+  }
+
+  @if (showAlertsModal) {
+    <app-modal-container 
+      title="Gestione Alert Prezzi {{modalSymbol ? '- ' + modalSymbol.toUpperCase() : ''}}"
+      size="lg"
+      (closed)="closeModals()">
+      <app-alert-manager [filterBySymbol]="modalSymbol"></app-alert-manager>
+    </app-modal-container>
+  }
 
 </div>

@@ -1,3 +1,4 @@
+<!-- alert-manager.component.html - CORREZIONE -->
 <div class="alert-manager">
   <h3>💰 Gestione Alert Prezzi 
     <span *ngIf="filterBySymbol" class="filter-info">
@@ -7,17 +8,14 @@
   
   <!-- Form per creare nuovo alert -->
   <div class="alert-form">
-  <div class="form-group">
-    <label>Simbolo:</label>
-    <input 
-      type="text" 
-      [(ngModel)]="newAlert.symbol" 
-      placeholder="BTCUSDT" 
-      class="form-input">
-  </div>
-  
-  <!-- ... resto del form ... -->
-</div>
+    <div class="form-group">
+      <label>Simbolo:</label>
+      <input 
+        type="text" 
+        [(ngModel)]="newAlert.symbol" 
+        placeholder="BTCUSDT" 
+        class="form-input">
+    </div>
     
     <div class="form-group">
       <label>Condizione:</label>
@@ -37,30 +35,33 @@
 
   <!-- Lista alert attivi -->
   <div class="alerts-list">
-    <h4>Alert Attivi ({{filteredAlerts.length}})</h4>
+    <h4>Alert Attivi</h4>
     
-    <div *ngFor="let alert of filteredAlerts" class="alert-item" [class.triggered]="alert.triggered">
-      <div class="alert-info">
-        <span class="symbol">{{alert.symbol}}</span>
-        <span class="condition">{{alert.condition === 'above' ? '≥' : '≤'}}</span>
-        <span class="price">${{alert.price | number:'1.2-2'}}</span>
-        <span class="status" [class.active]="alert.active" [class.triggered]="alert.triggered">
-          {{alert.triggered ? '⚠️ ATTIVATO' : (alert.active ? 'ATTIVO' : 'DISATTIVATO')}}
-        </span>
+    <ng-container *ngIf="filteredAlerts$ | async as alerts">
+      <div *ngFor="let alert of alerts" class="alert-item" [class.triggered]="alert.triggered">
+        <div class="alert-info">
+          <span class="symbol">{{alert.symbol}}</span>
+          <span class="condition">{{alert.condition === 'above' ? '≥' : '≤'}}</span>
+          <span class="price">${{alert.price | number:'1.2-2'}}</span>
+          <span class="status" [class.active]="alert.active" [class.triggered]="alert.triggered">
+            {{alert.triggered ? '⚠️ ATTIVATO' : (alert.active ? 'ATTIVO' : 'DISATTIVATO')}}
+          </span>
+        </div>
+        
+        <div class="alert-actions">
+          <button *ngIf="!alert.triggered" 
+                  (click)="toggleAlert(alert.id)" 
+                  class="btn btn-sm">
+            {{alert.active ? 'Disattiva' : 'Attiva'}}
+          </button>
+          <button (click)="removeAlert(alert.id)" class="btn btn-sm btn-danger">Elimina</button>
+        </div>
       </div>
-      
-      <div class="alert-actions">
-        <button *ngIf="!alert.triggered" 
-                (click)="toggleAlert(alert.id)" 
-                class="btn btn-sm">
-          {{alert.active ? 'Disattiva' : 'Attiva'}}
-        </button>
-        <button (click)="removeAlert(alert.id)" class="btn btn-sm btn-danger">Elimina</button>
-      </div>
-    </div>
 
-    <div *ngIf="filteredAlerts.length === 0" class="no-alerts">
-      <p *ngIf="filterBySymbol">Nessun alert configurato per {{filterBySymbol.toUpperCase()}}</p>
-      <p *ngIf="!filterBySymbol">Nessun alert configurato</p>
-    </div>
+      <div *ngIf="alerts.length === 0" class="no-alerts">
+        <p *ngIf="filterBySymbol">Nessun alert configurato per {{filterBySymbol.toUpperCase()}}</p>
+        <p *ngIf="!filterBySymbol">Nessun alert configurato</p>
+      </div>
+    </ng-container>
   </div>
+</div>

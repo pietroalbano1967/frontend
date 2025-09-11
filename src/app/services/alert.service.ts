@@ -1,7 +1,8 @@
-// alert.service.ts - VERSIONE COMPLETA CORRETTA
+// alert.service.ts - VERSIONE CORRETTA
 import { Injectable, Inject, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { NotificationService } from './notification.service';
+import { BehaviorSubject } from 'rxjs';
 
 export interface PriceAlert {
   id: string;
@@ -16,6 +17,7 @@ export interface PriceAlert {
 @Injectable({ providedIn: 'root' })
 export class AlertService {
   private alerts = signal<PriceAlert[]>([]);
+  private alertsSubject = new BehaviorSubject<PriceAlert[]>([]);
   private isBrowser: boolean;
   private notificationService = inject(NotificationService);
 
@@ -37,6 +39,7 @@ export class AlertService {
     
     this.alerts.set([...this.alerts(), newAlert]);
     this.saveAlerts();
+    this.alertsSubject.next(this.alerts()); // Notifica i subscribers
     
     return newAlert;
   }
@@ -44,6 +47,7 @@ export class AlertService {
   removeAlert(id: string): void {
     this.alerts.set(this.alerts().filter(alert => alert.id !== id));
     this.saveAlerts();
+    this.alertsSubject.next(this.alerts()); // Notifica i subscribers
   }
 
   updateAlert(id: string, updates: Partial<PriceAlert>): void {
@@ -51,56 +55,58 @@ export class AlertService {
       alert.id === id ? { ...alert, ...updates } : alert
     ));
     this.saveAlerts();
+    this.alertsSubject.next(this.alerts()); // Notifica i subscribers
   }
 
   checkAlerts(symbol: string, currentPrice: number): PriceAlert[] {
-  console.log('Checking alerts for:', symbol, 'price:', currentPrice);
-  console.log('Current alerts:', this.alerts());
-  const triggeredAlerts: PriceAlert[] = [];
-  const upperSymbol = symbol.toUpperCase();
-  
-  // Prima identifica quali alert devono essere triggerati
-  const alertsToTrigger = this.alerts().filter(alert => 
-    alert.active && 
-    !alert.triggered && 
-    alert.symbol === upperSymbol &&
-    ((alert.condition === 'above' && currentPrice >= alert.price) ||
-     (alert.condition === 'below' && currentPrice <= alert.price))
-  );
-  
-  // Poi triggera ciascun alert e aggiungilo alla lista
-  alertsToTrigger.forEach(alert => {
-    this.triggerAlert(alert.id);
-    // Dopo il trigger, l'alert sarà aggiornato nello stato
-    const updatedAlert = this.alerts().find(a => a.id === alert.id);
-    if (updatedAlert) {
-      triggeredAlerts.push(updatedAlert);
-    }
-  });
-  
-  return triggeredAlerts;
-}
-
-private triggerAlert(id: string): void {
-  this.alerts.set(this.alerts().map(alert => 
-    alert.id === id ? { ...alert, triggered: true, active: false } : alert
-  ));
-  this.saveAlerts();
-  
-  const alert = this.alerts().find(a => a.id === id);
-  if (alert && this.isBrowser) {
-    this.notificationService.addNotification({
-      type: 'alert',
-      title: `Alert Attivato: ${alert.symbol}`,
-      message: `${alert.symbol} ha ${alert.condition === 'above' ? 'superato' : 'raggiunto'} $${alert.price}`,
-      symbol: alert.symbol,
-      price: alert.price
+    console.log('Checking alerts for:', symbol, 'price:', currentPrice);
+    const triggeredAlerts: PriceAlert[] = [];
+    const upperSymbol = symbol.toUpperCase();
+    
+    const alertsToTrigger = this.alerts().filter(alert => 
+      alert.active && 
+      !alert.triggered && 
+      alert.symbol === upperSymbol &&
+      ((alert.condition === 'above' && currentPrice >= alert.price) ||
+       (alert.condition === 'below' && currentPrice <= alert.price))
+    );
+    
+    alertsToTrigger.forEach(alert => {
+      this.triggerAlert(alert.id);
+      const updatedAlert = this.alerts().find(a => a.id === alert.id);
+      if (updatedAlert) {
+        triggeredAlerts.push(updatedAlert);
+      }
     });
+    
+    return triggeredAlerts;
   }
-}
+
+  private triggerAlert(id: string): void {
+    this.alerts.set(this.alerts().map(alert => 
+      alert.id === id ? { ...alert, triggered: true, active: false } : alert
+    ));
+    this.saveAlerts();
+    this.alertsSubject.next(this.alerts()); // Notifica i subscribers
+    
+    const alert = this.alerts().find(a => a.id === id);
+    if (alert && this.isBrowser) {
+      this.notificationService.addNotification({
+        type: 'alert',
+        title: `Alert Attivato: ${alert.symbol}`,
+        message: `${alert.symbol} ha ${alert.condition === 'above' ? 'superato' : 'raggiunto'} $${alert.price}`,
+        symbol: alert.symbol,
+        price: alert.price
+      });
+    }
+  }
 
   getAlerts() {
-    return this.alerts.asReadonly();
+    return this.alertsSubject.asObservable();
+  }
+
+  getAlertsSnapshot(): PriceAlert[] {
+    return this.alerts();
   }
 
   private saveAlerts(): void {
@@ -124,6 +130,7 @@ private triggerAlert(id: string): void {
             createdAt: new Date(alert.createdAt)
           }));
           this.alerts.set(parsedAlerts);
+          this.alertsSubject.next(parsedAlerts); // Notifica i subscribers
         }
       } catch (error) {
         console.error('Error loading alerts from localStorage:', error);
@@ -134,4 +141,5 @@ private triggerAlert(id: string): void {
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
+  
 }

@@ -6,15 +6,17 @@ import { Subscription } from 'rxjs';
 import { MiniTicker, WebSocketMessage } from './../../types/binance.types';
 import { BinanceApiService } from '../../services/binance-api.service';
 import { PriceChartComponent } from '../chart/chart.component';
-import { AlertManagerComponent } from '../alert-manager/alert-manager.component';
 import { AlertService } from '../../services/alert.service';
 import { SymbolSelectorComponent } from '../symbol-selector/symbol-selector.component';
 import { MiniTickerTableComponent } from '../mini-ticker-table/mini-ticker-table.component';
 import { AnalyticsService } from '../../services/analytics.service';
 import { NotificationService } from '../../services/notification.service';
-import { AnalyticsDashboardComponent } from '../analytics-dashboard/analytics-dashboard.component';
 import { NotificationCenterComponent } from '../notification-center/notification-center.component';
-const MAX_CHARTS = 2;
+import { ModalContainerComponent } from '../modal/modal-container/modal-container.component';
+import { AnalyticsDashboardComponent } from '../analytics-dashboard/analytics-dashboard.component';
+import { AlertManagerComponent } from '../alert-manager/alert-manager.component';
+
+const MAX_CHARTS = 4;
 
 @Component({
   standalone: true,
@@ -24,11 +26,12 @@ const MAX_CHARTS = 2;
     HttpClientModule,
     FormsModule,
     PriceChartComponent,
-    AlertManagerComponent,
     SymbolSelectorComponent,
     MiniTickerTableComponent,
-    NotificationCenterComponent,    // Aggiungi questa riga
-    AnalyticsDashboardComponent     // Aggiungi questa riga
+    NotificationCenterComponent,
+    ModalContainerComponent,
+    AnalyticsDashboardComponent,
+    AlertManagerComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -51,7 +54,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   chartLabels = signal<string[]>([]);
   priceHistory = signal<Record<string, number[]>>({});
   selectedTicker: string = '';
-  showAllAnalytics: boolean = false;
+  showAnalyticsModal = false;
+  showAlertsModal = false;
+  modalSymbol = '';
+  
   private wsSubscription: Subscription | null = null;
   private subscriptions: Subscription[] = [];
   private reconnectAttempts = 0;
@@ -100,18 +106,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   start() {
     this.startWebSocket();
   }
-// Aggiungi questo metodo
+
   onClearAll() {
     this.symbolsInput = '';
     this.selectedTicker = '';
-    this.analyticsSymbol = '';
-    this.showAllAnalytics = false;
     this.miniTickers.set([]);
     this.chartLabels.set([]);
     this.priceHistory.set({});
-    this.stop(); // Disconnetti il WebSocket
+    this.stop();
     this.clearFeed();
+    this.closeModals();
   }
+
   private startWebSocket() {
     const wsList = this.wsSymbols();
     if (wsList.length === 0) {
@@ -119,9 +125,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Ferma connessione esistente
     this.stop();
-
     this.isConnecting = true;
 
     const sub = this.api.connectWS(wsList.join(','), 'miniTicker,kline_1m').subscribe({
@@ -143,7 +147,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.isConnecting = false;
         this.wsOpen = false;
         
-        // Tentativo di riconnessione
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
           this.reconnectTimer = setTimeout(() => this.startWebSocket(), 2000 * this.reconnectAttempts);
@@ -215,7 +218,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.miniTickers.set([...current, newData]);
     }
 
-    // Aggiorna analytics
     this.analyticsService.updatePrice(newData.symbol, newData.last_price);
 
     const chartSet = new Set(this.chartSymbols());
@@ -245,14 +247,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private checkPriceAlerts(ticker: MiniTicker) {
-  console.log('Checking price alerts for:', ticker.symbol, ticker.last_price);
-  const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
-  console.log('Triggered alerts:', triggeredAlerts);
-  
-  triggeredAlerts.forEach(alert => {
-    this.showAlertNotification(alert, ticker.last_price);
-  });
-}
+    console.log('Checking price alerts for:', ticker.symbol, ticker.last_price);
+    const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
+    console.log('Triggered alerts:', triggeredAlerts);
+    
+    triggeredAlerts.forEach(alert => {
+      this.showAlertNotification(alert, ticker.last_price);
+    });
+  }
 
   private showAlertNotification(alert: any, currentPrice: number) {
     if (!this.isBrowser) return;
@@ -274,27 +276,14 @@ Prezzo attuale: $${currentPrice}`;
     this.playAlertSound();
   }
 
-  // dashboard.component.ts - aggiungi questa proprietà
-analyticsSymbol: string = '';
+  clearSelection() {
+    this.selectedTicker = '';
+  }
 
-// aggiorna il metodo selectTicker
-selectTicker(ticker: MiniTicker) {
-  this.selectedTicker = ticker.symbol;
-  this.analyticsSymbol = ticker.symbol; // Imposta il simbolo per analytics
-}
-
-// aggiungi metodo per deselezionare
-clearSelection() {
-  this.selectedTicker = '';
-  this.analyticsSymbol = '';
-}
-
-  // Metodo per ottenere i dettagli di un ticker specifico
   getTickerDetails(symbol: string): MiniTicker | null {
     return this.miniTickers().find(t => t.symbol === symbol) || null;
   }
 
-  // Metodo per calcolare la percentuale di cambiamento del prezzo
   getPriceChangePercent(ticker: MiniTicker): number {
     const midPrice = (ticker.high_price + ticker.low_price) / 2;
     return midPrice !== 0 ? ((ticker.last_price - midPrice) / midPrice) * 100 : 0;
@@ -326,14 +315,13 @@ clearSelection() {
     return this.selectedSymbolsArr().length;
   }
 
-   onSymbolsChange(symbolsString: string) {
+  onSymbolsChange(symbolsString: string) {
     const valid = symbolsString.split(',')
       .map(s => s.trim().toLowerCase())
       .filter(Boolean);
     
     this.symbolsInput = valid.join(',');
     
-    // Se la stringa è vuota, pulisci tutto
     if (valid.length === 0) {
       this.onClearAll();
       return;
@@ -352,5 +340,25 @@ clearSelection() {
     
     const allowed = new Set(valid);
     this.miniTickers.set(this.miniTickers().filter(t => allowed.has(t.symbol)));
+  }
+
+  openAnalyticsModal(symbol?: string) {
+    this.modalSymbol = symbol || '';
+    this.showAnalyticsModal = true;
+  }
+
+  openAlertsModal(symbol?: string) {
+    this.modalSymbol = symbol || '';
+    this.showAlertsModal = true;
+  }
+
+  closeModals() {
+    this.showAnalyticsModal = false;
+    this.showAlertsModal = false;
+    this.modalSymbol = '';
+  }
+
+  selectTicker(ticker: MiniTicker) {
+    this.selectedTicker = ticker.symbol;
   }
 }

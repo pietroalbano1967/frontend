@@ -1,7 +1,9 @@
-import { Component, inject, Input, OnChanges, SimpleChanges } from '@angular/core'; // Aggiungi OnChanges e SimpleChanges
+// alert-manager.component.ts - CORREZIONE
+import { Component, inject, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AlertService, PriceAlert } from '../../services/alert.service';
+import { Observable, map } from 'rxjs';
 
 @Component({
   selector: 'app-alert-manager',
@@ -10,10 +12,11 @@ import { AlertService, PriceAlert } from '../../services/alert.service';
   templateUrl: './alert-manager.component.html',
   styleUrls: ['./alert-manager.component.scss']
 })
-export class AlertManagerComponent implements OnChanges { // Implementa OnChanges
+export class AlertManagerComponent implements OnChanges {
   private alertService = inject(AlertService);
   
-  alerts = this.alertService.getAlerts();
+  alerts$: Observable<PriceAlert[]> = this.alertService.getAlerts();
+  filteredAlerts$: Observable<PriceAlert[]> = this.alerts$;
   
   @Input() filterBySymbol: string = '';
   
@@ -23,20 +26,22 @@ export class AlertManagerComponent implements OnChanges { // Implementa OnChange
     price: 0
   };
 
-  // Aggiungi il metodo ngOnChanges
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['filterBySymbol'] && this.filterBySymbol) {
-      // Quando c'è un filtro, precompila automaticamente il simbolo
-      this.newAlert.symbol = this.filterBySymbol.toUpperCase();
+    if (changes['filterBySymbol']) {
+      this.updateFilteredAlerts();
     }
   }
 
-  // Metodo per ottenere gli alert filtrati
-  get filteredAlerts() {
-    if (!this.filterBySymbol) return this.alerts();
-    return this.alerts().filter(alert => 
-      alert.symbol.toLowerCase() === this.filterBySymbol.toLowerCase()
-    );
+  private updateFilteredAlerts() {
+    if (!this.filterBySymbol) {
+      this.filteredAlerts$ = this.alerts$;
+    } else {
+      this.filteredAlerts$ = this.alerts$.pipe(
+        map(alerts => alerts.filter(alert => 
+          alert.symbol.toLowerCase() === this.filterBySymbol.toLowerCase()
+        ))
+      );
+    }
   }
 
   createAlert() {
@@ -47,7 +52,6 @@ export class AlertManagerComponent implements OnChanges { // Implementa OnChange
         this.newAlert.price
       );
       
-      // Reset form
       this.newAlert.price = 0;
     }
   }
@@ -57,9 +61,12 @@ export class AlertManagerComponent implements OnChanges { // Implementa OnChange
   }
 
   toggleAlert(id: string) {
-    const alert = this.alerts().find(a => a.id === id);
-    if (alert) {
-      this.alertService.updateAlert(id, { active: !alert.active });
-    }
+    this.alerts$.pipe(
+      map(alerts => alerts.find(a => a.id === id))
+    ).subscribe(alert => {
+      if (alert) {
+        this.alertService.updateAlert(id, { active: !alert.active });
+      }
+    });
   }
 }

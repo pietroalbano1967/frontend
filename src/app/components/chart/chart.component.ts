@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, ViewChild, ElementRef, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, OnChanges, ViewChild, ElementRef, SimpleChanges, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, registerables } from 'chart.js';
 import { AlertService } from '../../services/alert.service';
@@ -10,27 +10,10 @@ Chart.register(...registerables);
   selector: 'app-price-chart',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="chart-container">
-      <h3>{{ title }}</h3>
-      <canvas #chartCanvas></canvas>
-    </div>
-  `,
-  styles: [`
-    .chart-container {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
-    canvas {
-      width: 100% !important;
-      height: 300px !important;
-    }
-  `]
+  templateUrl: './chart.component.html',
+  styleUrls: ['./chart.component.scss']
 })
-export class PriceChartComponent implements OnChanges {
+export class PriceChartComponent implements OnChanges, OnDestroy {
   @ViewChild('chartCanvas', { static: true }) chartCanvas!: ElementRef;
   @Input() title: string = 'Price Chart';
   @Input() data: number[] = [];
@@ -39,24 +22,49 @@ export class PriceChartComponent implements OnChanges {
 
   private chart: Chart | null = null;
   private alertService = inject(AlertService);
+  private alertSubscription: any;
   private previousAlerts: PriceAlert[] = [];
-  private previousSymbol: string = '';
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['data'] || changes['labels']) {
+    if (changes['symbol'] && this.chart) {
+      this.destroyChart();
+      this.createChart();
+    } else if (changes['data'] || changes['labels']) {
       this.updateChart();
     }
-    
-    if (changes['symbol']) {
-      // Se cambia il simbolo, ricrea completamente il grafico
-      if (this.chart && this.previousSymbol !== this.symbol) {
-        this.chart.destroy();
-        this.chart = null;
-        this.previousSymbol = this.symbol;
-      }
-      if (this.data.length > 0 && this.labels.length > 0 && this.symbol) {
-        this.createChart();
-      }
+  }
+
+  ngOnInit() {
+    this.alertSubscription = this.alertService.getAlerts().subscribe(() => {
+      this.updateAlertLines();
+    });
+  }
+
+  ngOnDestroy() {
+    this.destroyChart();
+    if (this.alertSubscription) {
+      this.alertSubscription.unsubscribe();
+    }
+  }
+
+  getCurrentPrice(): number {
+    return this.data.length > 0 ? this.data[this.data.length - 1] : 0;
+  }
+
+  getPriceChange(): number {
+    if (this.data.length < 2) return 0;
+    return this.data[this.data.length - 1] - this.data[0];
+  }
+
+  getPriceChangePercent(): number {
+    if (this.data.length < 2 || this.data[0] === 0) return 0;
+    return (this.getPriceChange() / this.data[0]) * 100;
+  }
+
+  private destroyChart() {
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = null;
     }
   }
 
@@ -66,97 +74,126 @@ export class PriceChartComponent implements OnChanges {
       return;
     }
 
-    // Aggiorna solo i dati invece di ricreare il grafico
     this.chart.data.labels = this.labels;
     this.chart.data.datasets[0].data = this.data;
-    this.chart.data.datasets[0].label = this.symbol;
-    
-    // Aggiorna le linee degli alert se sono cambiate
-    this.updateAlertLines();
-    
-    this.chart.update('none'); // 'none' per evitare animazioni
+    this.chart.update('none');
   }
 
-  private createChart() {
-    if (!this.data.length || !this.labels.length || !this.symbol) return;
-    
-    const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    
-    // Ottieni gli alert per questo simbolo
-    const alerts = this.getAlertsForSymbol();
-    this.previousAlerts = [...alerts];
-    this.previousSymbol = this.symbol;
-    
-    const alertLines = this.createAlertLines(alerts);
-    
-    this.chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: this.labels,
-        datasets: [
-          {
-            label: this.symbol,
-            data: this.data,
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1,
-            fill: false,
-            pointBackgroundColor: 'rgb(75, 192, 192)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgb(75, 192, 192)'
-          },
-          ...alertLines
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-          }
+// chart.component.ts - CORREZIONE
+private createChart() {
+  if (!this.data.length || !this.labels.length || !this.symbol) return;
+  
+  const ctx = this.chartCanvas.nativeElement.getContext('2d');
+  if (!ctx) return;
+
+  const alerts = this.getAlertsForSymbol();
+  this.previousAlerts = [...alerts];
+  
+  this.chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: this.labels,
+      datasets: [
+        {
+          label: this.symbol,
+          data: this.data,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          tension: 0.1,
+          fill: true,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgb(59, 130, 246)'
         },
-        scales: {
-          x: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Time'
-            }
-          },
-          y: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Price (USDT)'
+        ...this.createAlertLines(alerts)
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          callbacks: {
+            label: (context) => {
+              return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
             }
           }
         }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: {
+            display: false
+          },
+          ticks: {
+            maxTicksLimit: 6,
+            font: {
+              size: 10
+            }
+          }
+        },
+        y: {
+          display: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)'
+          },
+          ticks: {
+            font: {
+              size: 10
+            },
+            callback: (value) => {
+              return typeof value === 'number' ? '$' + value.toFixed(2) : value;
+            }
+          }
+        }
+      },
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      // CORREZIONE: animations deve essere un oggetto con le proprietà specifiche
+      animations: {
+        tension: {
+          duration: 0,
+          easing: 'linear'
+        },
+        colors: {
+          duration: 0
+        },
+        numbers: {
+          duration: 0
+        }
       }
-    });
-  }
+    }
+  });
+}
 
   private updateAlertLines() {
     if (!this.chart) return;
     
     const currentAlerts = this.getAlertsForSymbol();
     
-    // Controlla se gli alert sono cambiati
-    const alertsChanged = this.haveAlertsChanged(currentAlerts);
-    
-    if (alertsChanged) {
+    if (this.haveAlertsChanged(currentAlerts)) {
       this.previousAlerts = [...currentAlerts];
       
-      // Rimuovi tutti i dataset degli alert (tutti tranne il primo)
       const mainDataset = this.chart.data.datasets[0];
       this.chart.data.datasets = [mainDataset];
       
-      // Aggiungi i nuovi dataset degli alert
       const alertLines = this.createAlertLines(currentAlerts);
       this.chart.data.datasets.push(...alertLines);
       
@@ -176,14 +213,16 @@ export class PriceChartComponent implements OnChanges {
     });
   }
 
-  private getAlertsForSymbol(): PriceAlert[] {
-    const allAlerts = this.alertService.getAlerts()();
-    return allAlerts.filter((alert: PriceAlert) => 
-      alert.symbol.toLowerCase() === this.symbol.toLowerCase() && 
-      alert.active && 
-      !alert.triggered
-    );
-  }
+  // price-chart.component.ts - AGGIORNAMENTO
+private getAlertsForSymbol(): PriceAlert[] {
+  // Usa getAlertsSnapshot() invece di getAlerts()()
+  const allAlerts = this.alertService.getAlertsSnapshot();
+  return allAlerts.filter((alert: PriceAlert) => 
+    alert.symbol.toLowerCase() === this.symbol.toLowerCase() && 
+    alert.active && 
+    !alert.triggered
+  );
+}
 
   private createAlertLines(alerts: PriceAlert[]): any[] {
     return alerts.map(alert => {
