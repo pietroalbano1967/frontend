@@ -4,7 +4,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 export interface Notification {
   id: string;
-  type: 'alert' | 'info' | 'warning' | 'success';
+  type: 'alert' | 'info' | 'warning' | 'success' | 'error'; // Aggiungi 'error'
   title: string;
   message: string;
   timestamp: Date;

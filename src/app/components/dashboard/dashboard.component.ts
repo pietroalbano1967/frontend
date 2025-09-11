@@ -37,6 +37,7 @@ const MAX_CHARTS = 4;
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  isSimulationMode = true; // Modalità simulazione attiva per default
   private api = inject(BinanceApiService);
   private alertService = inject(AlertService);
   private analyticsService = inject(AnalyticsService);
@@ -88,12 +89,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private selectedSymbolsArr(): string[] {
-    return (this.symbolsInput || '')
-      .split(',')
-      .map(s => s.trim().toLowerCase())
-      .filter(Boolean);
-  }
+  
 
   chartSymbols(): string[] {
     return this.selectedSymbolsArr().slice(0, MAX_CHARTS);
@@ -119,11 +115,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private startWebSocket() {
-    const wsList = this.wsSymbols();
-    if (wsList.length === 0) {
-      console.warn('Nessun simbolo valido selezionato');
-      return;
-    }
+  const wsList = this.wsSymbols();
+  if (wsList.length === 0) {
+    console.warn('Nessun simbolo valido selezionato');
+    return;
+  }
+
+  console.log('Starting WebSocket for symbols:', wsList);
 
     this.stop();
     this.isConnecting = true;
@@ -204,30 +202,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private updateTickerData(newData: MiniTicker) {
-    const allowed = new Set(this.selectedSymbolsArr());
-    if (!allowed.has(newData.symbol)) return;
-
-    const current = this.miniTickers();
-    const idx = current.findIndex(t => t.symbol === newData.symbol);
-
-    if (idx >= 0) {
-      const copy = [...current];
-      copy[idx] = { ...copy[idx], ...newData };
-      this.miniTickers.set(copy);
-    } else {
-      this.miniTickers.set([...current, newData]);
-    }
-
-    this.analyticsService.updatePrice(newData.symbol, newData.last_price);
-
-    const chartSet = new Set(this.chartSymbols());
-    if (chartSet.has(newData.symbol)) {
-      this.updateChartData(newData);
-    }
-
-    this.checkPriceAlerts(newData);
-    this.cdr.markForCheck();
+  console.log('Update ticker data:', newData.symbol, newData.last_price);
+  
+  const allowed = new Set(this.selectedSymbolsArr());
+  if (!allowed.has(newData.symbol)) {
+    console.log('Symbol not in allowed list:', newData.symbol);
+    return;
   }
+
+  const current = this.miniTickers();
+  const idx = current.findIndex(t => t.symbol === newData.symbol);
+
+  if (idx >= 0) {
+    const copy = [...current];
+    copy[idx] = { ...copy[idx], ...newData };
+    this.miniTickers.set(copy);
+  } else {
+    this.miniTickers.set([...current, newData]);
+  }
+
+  // AGGIUNGI QUESTA RIGA: Controlla gli alert per questo simbolo
+  this.checkPriceAlerts(newData);
+
+  // Aggiorna analytics
+  this.analyticsService.updatePrice(newData.symbol, newData.last_price);
+
+  const chartSet = new Set(this.chartSymbols());
+  if (chartSet.has(newData.symbol)) {
+    this.updateChartData(newData);
+  }
+
+  this.cdr.markForCheck();
+}
 
   private updateChartData(ticker: MiniTicker) {
     const now = new Date();
@@ -247,15 +253,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private checkPriceAlerts(ticker: MiniTicker) {
-    console.log('Checking price alerts for:', ticker.symbol, ticker.last_price);
-    const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
-    console.log('Triggered alerts:', triggeredAlerts);
-    
-    triggeredAlerts.forEach(alert => {
-      this.showAlertNotification(alert, ticker.last_price);
-    });
-  }
+  console.log('Checking alerts for:', ticker.symbol, 'price:', ticker.last_price);
+  
+  // Usa getAlertsSnapshot() invece di getAlerts()()
+  const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
+  console.log('Triggered alerts:', triggeredAlerts);
+  
+  triggeredAlerts.forEach(alert => {
+    this.showAlertNotification(alert, ticker.last_price);
+  });
+}
 
+
+testAlerts() {
+  // Test manuale degli alert
+  const testSymbol = this.selectedSymbolsArr()[0];
+  if (testSymbol) {
+    const testPrice = this.miniTickers().find(t => t.symbol === testSymbol)?.last_price;
+    if (testPrice) {
+      console.log('Testing alerts for:', testSymbol, testPrice);
+      const triggered = this.alertService.checkAlerts(testSymbol, testPrice);
+      console.log('Test result:', triggered);
+    }
+  }
+}
   private showAlertNotification(alert: any, currentPrice: number) {
     if (!this.isBrowser) return;
 
@@ -287,6 +308,15 @@ Prezzo attuale: $${currentPrice}`;
   getPriceChangePercent(ticker: MiniTicker): number {
     const midPrice = (ticker.high_price + ticker.low_price) / 2;
     return midPrice !== 0 ? ((ticker.last_price - midPrice) / midPrice) * 100 : 0;
+  }
+// Metodo per toggle della modalità
+  toggleTradingMode() {
+    this.isSimulationMode = !this.isSimulationMode;
+    this.notificationService.addNotification({
+      type: 'info',
+      title: `🔄 Modalità ${this.isSimulationMode ? 'Simulazione' : 'Reale'}`,
+      message: `Trading in modalità ${this.isSimulationMode ? 'simulazione' : 'reale'} attiva`
+    });
   }
 
   private playAlertSound() {
@@ -361,4 +391,14 @@ Prezzo attuale: $${currentPrice}`;
   selectTicker(ticker: MiniTicker) {
     this.selectedTicker = ticker.symbol;
   }
+
+  private selectedSymbolsArr(): string[] {
+  const symbols = (this.symbolsInput || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+  
+  console.log('Selected symbols:', symbols);
+  return symbols;
+}
 }

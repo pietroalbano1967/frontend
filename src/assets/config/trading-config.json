@@ -1,0 +1,59 @@
+{
+  "riskManagement": {
+    "maxPositionSize": 0.02,
+    "maxDailyLoss": 0.05,
+    "maxPortfolioRisk": 0.15,
+    "minRiskRewardRatio": 1.5,
+    "maxLeverage": 3,
+    "stopLossTypes": ["percentage", "atr", "supportResistance"],
+    "defaultStopLoss": 0.02
+  },
+  "orderSettings": {
+    "defaultOrderType": "limit",
+    "slippageTolerance": 0.001,
+    "commissionRate": 0.001,
+    "minTradeSize": 10,
+    "maxTradeSize": 10000,
+    "timeInForce": "GTC"
+  },
+  "tradingHours": {
+    "preferredSession": "24/7",
+    "avoidTimes": ["00:00-02:00", "12:00-14:00"],
+    "highVolatilityHours": ["08:00-10:00", "14:00-16:00", "20:00-22:00"]
+  },
+  "symbolSettings": {
+    "defaultSymbols": ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "SOLUSDT"],
+    "blacklist": ["SHIBUSDT", "DOGEUSDT", "SAFEMOONUSDT"],
+    "minVolume24h": 1000000,
+    "minPrice": 0.01,
+    "maxSpread": 0.002
+  },
+  "performanceTargets": {
+    "monthlyTarget": 0.08,
+    "annualTarget": 1.0,
+    "maxDrawdown": 0.15,
+    "minWinRate": 0.55,
+    "minProfitFactor": 1.5
+  },
+  "notifications": {
+    "emailAlerts": true,
+    "pushNotifications": true,
+    "discordWebhook": "",
+    "telegramBot": "",
+    "alertLevels": ["high", "medium", "low"]
+  },
+  "apiSettings": {
+    "binanceApiKey": "",
+    "binanceSecretKey": "",
+    "testnet": true,
+    "requestTimeout": 30000,
+    "maxRetries": 3
+  },
+  "backtestSettings": {
+    "initialCapital": 10000,
+    "commission": 0.001,
+    "slippage": 0.001,
+    "warmupPeriod": 50,
+    "validationPeriod": 0.2
+  }
+}

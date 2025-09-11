@@ -1,0 +1,82 @@
+{
+  "strategies": {
+    "rsiMeanReversion": {
+      "name": "RSI Mean Reversion",
+      "description": "Buy when RSI is oversold (<30), sell when overbought (>70)",
+      "parameters": {
+        "rsiPeriod": 14,
+        "oversoldThreshold": 30,
+        "overboughtThreshold": 70,
+        "minConfidence": 0.6
+      },
+      "timeframes": ["15m", "1h", "4h"],
+      "riskLevel": "medium",
+      "preferredAssets": ["BTC", "ETH", "ADA", "DOT", "LINK"]
+    },
+    "macdTrendFollowing": {
+      "name": "MACD Trend Following",
+      "description": "Follow MACD crossovers for trend direction",
+      "parameters": {
+        "fastPeriod": 12,
+        "slowPeriod": 26,
+        "signalPeriod": 9,
+        "minSignalStrength": 0.5
+      },
+      "timeframes": ["1h", "4h", "1d"],
+      "riskLevel": "medium",
+      "preferredAssets": ["BTC", "ETH", "BNB", "SOL", "AVAX"]
+    },
+    "bollingerBreakout": {
+      "name": "Bollinger Bands Breakout",
+      "description": "Trade breakouts from Bollinger Bands with volume confirmation",
+      "parameters": {
+        "period": 20,
+        "deviation": 2,
+        "volumeMultiplier": 1.5,
+        "minBreakoutStrength": 0.7
+      },
+      "timeframes": ["30m", "1h", "4h"],
+      "riskLevel": "high",
+      "preferredAssets": ["BTC", "ETH", "XRP", "DOGE", "MATIC"]
+    },
+    "volumeSpike": {
+      "name": "Volume Spike Strategy",
+      "description": "Trade on unusual volume spikes with price confirmation",
+      "parameters": {
+        "volumeThreshold": 2.0,
+        "minPriceChange": 0.02,
+        "confirmationBars": 3
+      },
+      "timeframes": ["5m", "15m", "30m"],
+      "riskLevel": "high",
+      "preferredAssets": ["BTC", "ETH", "ADA", "LTC", "XLM"]
+    },
+    "movingAverageCrossover": {
+      "name": "Moving Average Crossover",
+      "description": "Golden cross/death cross strategy with EMA crossovers",
+      "parameters": {
+        "fastMA": 9,
+        "slowMA": 21,
+        "signalMA": 50,
+        "minCrossoverStrength": 0.6
+      },
+      "timeframes": ["1h", "4h", "1d"],
+      "riskLevel": "low",
+      "preferredAssets": ["BTC", "ETH", "BNB", "ADA", "DOT"]
+    }
+  },
+  "defaultStrategy": "rsiMeanReversion",
+  "strategyWeights": {
+    "rsiMeanReversion": 0.3,
+    "macdTrendFollowing": 0.25,
+    "bollingerBreakout": 0.2,
+    "volumeSpike": 0.15,
+    "movingAverageCrossover": 0.1
+  },
+  "marketConditions": {
+    "bullish": ["macdTrendFollowing", "movingAverageCrossover"],
+    "bearish": ["rsiMeanReversion", "bollingerBreakout"],
+    "volatile": ["volumeSpike", "bollingerBreakout"],
+    "ranging": ["rsiMeanReversion"]
+  }
+}

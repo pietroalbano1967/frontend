@@ -1,0 +1,249 @@
+// trading-dashboard.component.scss
+.trading-dashboard {
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+  h2 {
+    margin: 0;
+    color: #2c3e50;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.decisions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.decision-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-left: 4px solid #6c757d;
+
+  &.decision-long {
+    border-left-color: #28a745;
+  }
+
+  &.decision-short {
+    border-left-color: #dc3545;
+  }
+
+  &.decision-neutral {
+    border-left-color: #ffc107;
+  }
+}
+
+.decision-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    color: #2c3e50;
+  }
+}
+
+.decision-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 12px;
+
+  &.decision-long {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  &.decision-short {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  &.decision-neutral {
+    background: #fff3cd;
+    color: #856404;
+  }
+}
+
+.confidence-bar {
+  background: #e9ecef;
+  border-radius: 20px;
+  height: 24px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+
+  .confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 20px;
+    transition: width 0.3s ease;
+  }
+
+  span {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+}
+
+.decision-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .detail-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+
+    label {
+      font-weight: 600;
+      color: #6c757d;
+      margin-right: 8px;
+    }
+
+    .value {
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+  }
+}
+
+.signals-section {
+  margin-bottom: 16px;
+
+  h4 {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: 14px;
+  }
+}
+
+.signals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.signal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 12px;
+
+  .signal-action {
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+
+    &.BUY {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    &.SELL {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  }
+
+  .signal-reason {
+    flex: 1;
+    margin: 0 8px;
+    color: #6c757d;
+  }
+
+  .signal-confidence {
+    font-weight: 600;
+    color: #495057;
+  }
+}
+
+.decision-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quality-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.quality-high {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  &.quality-medium {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  &.quality-low {
+    background: #f8d7da;
+    color: #721c24;
+  }
+}
+
+.no-decisions {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  font-style: italic;
+  grid-column: 1 / -1;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .decisions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .decision-details {
+    grid-template-columns: 1fr;
+  }
+}

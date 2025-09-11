@@ -59,11 +59,13 @@ export class AlertService {
   }
 
   checkAlerts(symbol: string, currentPrice: number): PriceAlert[] {
-    console.log('Checking alerts for:', symbol, 'price:', currentPrice);
+    console.log('AlertService.checkAlerts called:', symbol, currentPrice);
+    
     const triggeredAlerts: PriceAlert[] = [];
     const upperSymbol = symbol.toUpperCase();
     
-    const alertsToTrigger = this.alerts().filter(alert => 
+    // Usa getAlertsSnapshot() per ottenere l'array corrente
+    const alertsToTrigger = this.getAlertsSnapshot().filter(alert => 
       alert.active && 
       !alert.triggered && 
       alert.symbol === upperSymbol &&
@@ -71,9 +73,11 @@ export class AlertService {
        (alert.condition === 'below' && currentPrice <= alert.price))
     );
     
+    console.log('Alerts to trigger:', alertsToTrigger);
+    
     alertsToTrigger.forEach(alert => {
       this.triggerAlert(alert.id);
-      const updatedAlert = this.alerts().find(a => a.id === alert.id);
+      const updatedAlert = this.getAlertsSnapshot().find(a => a.id === alert.id);
       if (updatedAlert) {
         triggeredAlerts.push(updatedAlert);
       }

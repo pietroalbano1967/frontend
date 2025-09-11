@@ -1,0 +1,78 @@
+<!-- trading-dashboard.component.html -->
+<div class="trading-dashboard">
+  <div class="dashboard-header">
+    <h2>📊 Trading Intelligence Dashboard</h2>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="analyzeSymbols()" [disabled]="isLoading">
+        {{ isLoading ? 'Analisi in corso...' : '🔄 Analizza Now' }}
+      </button>
+      <button class="btn btn-secondary" (click)="stopAutoAnalysis()">
+        ⏹️ Stop Auto
+      </button>
+      <button class="btn btn-secondary" (click)="startAutoAnalysis()">
+        ▶️ Auto Analysis
+      </button>
+    </div>
+  </div>
+
+  <div class="decisions-grid">
+    <div *ngFor="let decision of decisions" class="decision-card" [class]="getDecisionClass(decision.decision)">
+      <div class="decision-header">
+        <h3>{{ decision.symbol.toUpperCase() }}</h3>
+        <span class="decision-badge" [class]="getDecisionClass(decision.decision)">
+          {{ decision.decision }}
+        </span>
+      </div>
+
+      <div class="decision-content">
+        <div class="confidence-bar">
+          <div class="confidence-fill" [style.width.%]="decision.confidence * 100"></div>
+          <span>Confidenza: {{ (decision.confidence * 100).toFixed(0) }}%</span>
+        </div>
+
+        <div class="decision-details">
+          <div class="detail-item">
+            <label>Entry:</label>
+            <span class="value">${{ decision.entryPrice | number:'1.2-4' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Stop Loss:</label>
+            <span class="value">${{ decision.stopLoss | number:'1.2-4' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Take Profit:</label>
+            <span class="value">${{ decision.stopLoss | number:'1.2-4' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Risk/Reward:</label>
+            <span class="value">{{ decision.riskRewardRatio | number:'1.2' }}:1</span>
+          </div>
+        </div>
+
+        <div class="signals-section">
+          <h4>Segnali ({{ decision.signals.length }})</h4>
+          <div class="signals-list">
+            <div *ngFor="let signal of decision.signals" class="signal-item">
+              <span class="signal-action">{{ signal.action }}</span>
+              <span class="signal-reason">{{ signal.reason }}</span>
+              <span class="signal-confidence">{{ (signal.confidence * 100).toFixed(0) }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-actions">
+          <button class="btn btn-success" (click)="executeDecision(decision)">
+            🚀 Esegui Trade
+          </button>
+          <span class="quality-badge" [class]="getQualityClass(tradingService.getDecisionQuality(decision))">
+            Qualità: {{ tradingService.getDecisionQuality(decision) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="decisions.length === 0 && !isLoading" class="no-decisions">
+      <p>Nessuna decisione di trading disponibile. Avvia l'analisi per generare segnali.</p>
+    </div>
+  </div>
+</div>

@@ -45,16 +45,18 @@ export class AlertManagerComponent implements OnChanges {
   }
 
   createAlert() {
-    if (this.newAlert.symbol && this.newAlert.price > 0) {
-      this.alertService.createAlert(
-        this.newAlert.symbol,
-        this.newAlert.condition,
-        this.newAlert.price
-      );
-      
-      this.newAlert.price = 0;
-    }
+  if (this.newAlert.symbol && this.newAlert.price > 0) {
+    console.log('Creating alert:', this.newAlert);
+    const alert = this.alertService.createAlert(
+      this.newAlert.symbol,
+      this.newAlert.condition,
+      this.newAlert.price
+    );
+    console.log('Alert created:', alert);
+    
+    this.newAlert.price = 0;
   }
+}
 
   removeAlert(id: string) {
     this.alertService.removeAlert(id);
