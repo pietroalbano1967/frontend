@@ -1,0 +1,102 @@
+<!-- components/portfolio/portfolio.component.html -->
+<div class="portfolio-container">
+  <div class="portfolio-header">
+    <h3>📊 Portfolio Simulation</h3>
+    <div class="portfolio-stats">
+      <span class="total-value">Total: ${{ portfolio().totalValue | number:'1.2-2' }}</span>
+      <span class="cash">Cash: ${{ portfolio().cash | number:'1.2-2' }}</span>
+      <span class="equity">Equity: ${{ portfolio().equity | number:'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <div class="positions-section">
+    <h4>Current Positions ({{ currentPositions().length }})</h4>
+    
+    <div *ngIf="currentPositions().length === 0" class="no-positions">
+      <p>No active positions</p>
+    </div>
+
+    <div *ngFor="let position of currentPositions()" 
+         class="position-card" 
+         [class.long]="position.direction === 'LONG'" 
+         [class.short]="position.direction === 'SHORT'">
+      
+      <div class="position-header">
+        <span class="symbol">{{ position.symbol.toUpperCase() }}</span>
+        <span class="direction">
+          {{ position.direction }}
+        </span>
+      </div>
+      
+      <div class="position-details">
+        <div class="detail">
+          <span>Entry:</span>
+          <span>${{ position.entryPrice | number:'1.2-4' }}</span>
+        </div>
+        <div class="detail">
+          <span>Current:</span>
+          <span [class.positive]="position.pnl > 0" [class.negative]="position.pnl < 0">
+            ${{ position.currentPrice | number:'1.2-4' }}
+          </span>
+        </div>
+        <div class="detail">
+          <span>P&L:</span>
+          <span [class.positive]="position.pnl > 0" [class.negative]="position.pnl < 0">
+            ${{ position.pnl | number:'1.2-2' }} ({{ position.pnlPercent | number:'1.2-2' }}%)
+          </span>
+        </div>
+        <div class="detail">
+          <span>Stop Loss:</span>
+          <span>${{ position.stopLoss | number:'1.2-4' }}</span>
+        </div>
+        <div class="detail">
+          <span>Take Profit:</span>
+          <span>${{ position.takeProfit | number:'1.2-4' }}</span>
+        </div>
+      </div>
+
+      <button class="btn btn-sm btn-danger" (click)="closePosition(position)">
+        Close Position
+      </button>
+    </div>
+  </div>
+
+  <div class="history-section">
+    <h4>Trade History ({{ tradeHistory().length }})</h4>
+    
+    <div *ngIf="tradeHistory().length === 0" class="no-history">
+      <p>No trade history</p>
+    </div>
+
+    <div *ngFor="let trade of tradeHistory()" 
+         class="trade-card" 
+         [class.long]="trade.direction === 'LONG'" 
+         [class.short]="trade.direction === 'SHORT'">
+      
+      <div class="trade-header">
+        <span class="symbol">{{ trade.symbol.toUpperCase() }}</span>
+        <span class="direction">
+          {{ trade.direction }}
+        </span>
+        <span class="pnl" [class.positive]="trade.pnl > 0" [class.negative]="trade.pnl < 0">
+          ${{ trade.pnl | number:'1.2-2' }}
+        </span>
+      </div>
+      
+      <div class="trade-details">
+        <div class="detail">
+          <span>Entry:</span>
+          <span>${{ trade.entryPrice | number:'1.2-4' }}</span>
+        </div>
+        <div class="detail">
+          <span>Exit:</span>
+          <span>${{ trade.exitPrice | number:'1.2-4' }}</span>
+        </div>
+        <div class="detail">
+          <span>Duration:</span>
+          <span>{{ trade.duration | number:'1.0-0' }} min</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

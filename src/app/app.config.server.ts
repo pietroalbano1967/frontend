@@ -10,5 +10,7 @@ export const appConfigServer: ApplicationConfig = {
     provideServerRendering(),
     provideRouter(routes),
     provideHttpClient(withFetch()),
+    // Provider per identificare ambiente server
+    { provide: 'SERVER', useValue: true }
   ],
 };

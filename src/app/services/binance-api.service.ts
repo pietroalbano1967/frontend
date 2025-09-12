@@ -301,6 +301,7 @@ export class BinanceApiService {
     );
   }
 
+
   getPopularSymbols(): string[] {
     return [
       'btc', 'eth', 'bnb', 'sol', 'ada', 'xrp', 'doge', 'matic', 

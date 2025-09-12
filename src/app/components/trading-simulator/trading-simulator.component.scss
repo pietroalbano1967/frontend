@@ -1,0 +1,155 @@
+/* components/trading-simulator/trading-simulator.component.scss */
+.trading-simulator {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+
+  .simulator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    h3 {
+      margin: 0;
+      color: #2c3e50;
+    }
+
+    .simulator-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #dc3545;
+      color: white;
+
+      &.active {
+        background: #28a745;
+      }
+    }
+  }
+
+  .simulator-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      &.btn-primary {
+        background: #007bff;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: #0056b3;
+        }
+      }
+
+      &.btn-secondary {
+        background: #6c757d;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: #545b62;
+        }
+      }
+    }
+  }
+
+  .config-section {
+    margin-bottom: 20px;
+
+    h4 {
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+
+      .config-item {
+        display: flex;
+        flex-direction: column;
+
+        label {
+          font-weight: 500;
+          margin-bottom: 5px;
+          color: #495057;
+        }
+
+        input {
+          padding: 8px 12px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          font-size: 14px;
+
+          &:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+          }
+        }
+      }
+    }
+  }
+
+  .results-section {
+    border-top: 2px solid #e9ecef;
+    padding-top: 20px;
+
+    h4 {
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+
+      .result-item {
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+        .label {
+          font-size: 12px;
+          color: #6c757d;
+          margin-bottom: 5px;
+        }
+
+        .value {
+          font-weight: bold;
+          font-size: 16px;
+
+          &.positive {
+            color: #28a745;
+          }
+
+          &.negative {
+            color: #dc3545;
+          }
+        }
+      }
+    }
+  }
+}

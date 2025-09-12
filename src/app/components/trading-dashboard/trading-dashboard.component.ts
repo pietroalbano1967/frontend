@@ -1,7 +1,8 @@
 // components/trading-dashboard/trading-dashboard.component.ts
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformServer } from '@angular/common';
 import { CommonModule } from '@angular/common';
-import { TradingDecisionService, TradingDecision, TradingSignal } from '../../services/trading-decision.service';
+import { TradingDecisionService, TradingDecision } from '../../services/trading-decision.service';
 import { AnalyticsService } from '../../services/analytics.service';
 
 @Component({
@@ -12,7 +13,6 @@ import { AnalyticsService } from '../../services/analytics.service';
   styleUrls: ['./trading-dashboard.component.scss']
 })
 export class TradingDashboardComponent implements OnInit, OnDestroy {
-  // RIMUOVI 'private' per renderlo accessibile nel template
   tradingService = inject(TradingDecisionService);
   private analyticsService = inject(AnalyticsService);
 
@@ -20,8 +20,13 @@ export class TradingDashboardComponent implements OnInit, OnDestroy {
   isLoading = false;
   private updateInterval: any;
 
+  constructor(@Inject(PLATFORM_ID) private platformId: any) {}
+
   ngOnInit() {
-    this.startAutoAnalysis();
+    // Solo nel browser
+    if (!isPlatformServer(this.platformId)) {
+      this.startAutoAnalysis();
+    }
   }
 
   ngOnDestroy() {
@@ -41,6 +46,11 @@ export class TradingDashboardComponent implements OnInit, OnDestroy {
   }
 
   async analyzeSymbols() {
+    // Solo nel browser
+    if (isPlatformServer(this.platformId)) {
+      return;
+    }
+
     this.isLoading = true;
     const analyses = this.analyticsService.getAllAnalyses();
     
@@ -60,10 +70,16 @@ export class TradingDashboardComponent implements OnInit, OnDestroy {
   }
 
   async executeDecision(decision: TradingDecision) {
+    // Solo nel browser
+    if (isPlatformServer(this.platformId)) {
+      return false;
+    }
+
     const success = await this.tradingService.executeDecision(decision);
     if (success) {
       this.decisions = this.decisions.filter(d => d.symbol !== decision.symbol);
     }
+    return success;
   }
 
   getDecisionClass(decision: string): string {
@@ -81,6 +97,7 @@ export class TradingDashboardComponent implements OnInit, OnDestroy {
       default: return 'quality-low';
     }
   }
+
   getDecisionQuality(decision: TradingDecision): string {
     return this.tradingService.getDecisionQuality(decision);
   }

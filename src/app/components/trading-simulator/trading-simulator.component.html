@@ -1,0 +1,90 @@
+<!-- components/trading-simulator/trading-simulator.component.html -->
+<div class="trading-simulator">
+  <div class="simulator-header">
+    <h3>🎮 Trading Simulator</h3>
+    <div class="simulator-status" [class.active]="simulationActive">
+      {{ simulationActive ? 'SIMULAZIONE ATTIVA' : 'SIMULAZIONE FERMA' }}
+    </div>
+  </div>
+
+  <div class="simulator-controls">
+    <button class="btn btn-primary" (click)="toggleSimulation()">
+      {{ simulationActive ? '⏹️ Stop Simulation' : '▶️ Start Simulation' }}
+    </button>
+    
+    <button class="btn btn-secondary" (click)="resetPortfolio()">
+      🔄 Reset Portfolio
+    </button>
+
+    <button class="btn btn-secondary" (click)="runBacktest()" [disabled]="isLoading">
+      {{ isLoading ? 'Backtesting...' : '📊 Run Backtest' }}
+    </button>
+
+    <button class="btn btn-secondary" (click)="exportResults()">
+      💾 Export Results
+    </button>
+  </div>
+
+  <div class="config-section">
+    <h4>Configuration</h4>
+    <div class="config-grid">
+      <div class="config-item">
+        <label>Initial Capital:</label>
+        <input type="number" [(ngModel)]="config.initialCapital" (change)="updateConfig()">
+      </div>
+      <div class="config-item">
+        <label>Risk per Trade (%):</label>
+        <input type="number" [(ngModel)]="config.riskPerTrade" (change)="updateConfig()" step="0.01" min="0.01" max="0.1">
+      </div>
+      <div class="config-item">
+        <label>Max Positions:</label>
+        <input type="number" [(ngModel)]="config.maxPositions" (change)="updateConfig()" min="1" max="10">
+      </div>
+      <div class="config-item">
+        <label>Commission (%):</label>
+        <input type="number" [(ngModel)]="config.commission" (change)="updateConfig()" step="0.0001" min="0" max="0.01">
+      </div>
+      <div class="config-item">
+        <label>Slippage (%):</label>
+        <input type="number" [(ngModel)]="config.slippage" (change)="updateConfig()" step="0.0001" min="0" max="0.01">
+      </div>
+      <div class="config-item">
+        <label>Stop Loss (%):</label>
+        <input type="number" [(ngModel)]="config.stopLossPercent" (change)="updateConfig()" step="0.01" min="0.01" max="0.1">
+      </div>
+      <div class="config-item">
+        <label>Take Profit (%):</label>
+        <input type="number" [(ngModel)]="config.takeProfitPercent" (change)="updateConfig()" step="0.01" min="0.01" max="0.1">
+      </div>
+    </div>
+  </div>
+
+  <div class="results-section" *ngIf="simulationResults">
+    <h4>Backtest Results</h4>
+    <div class="results-grid">
+      <div class="result-item">
+        <span class="label">Total Profit:</span>
+        <span class="value" [class.positive]="simulationResults.totalProfit > 0" 
+              [class.negative]="simulationResults.totalProfit < 0">
+          ${{ simulationResults.totalProfit.toFixed(2) }}
+        </span>
+      </div>
+      <div class="result-item">
+        <span class="label">Total Trades:</span>
+        <span class="value">{{ simulationResults.totalTrades }}</span>
+      </div>
+      <div class="result-item">
+        <span class="label">Win Rate:</span>
+        <span class="value">{{ (simulationResults.winRate * 100).toFixed(1) }}%</span>
+      </div>
+      <div class="result-item">
+        <span class="label">Sharpe Ratio:</span>
+        <span class="value">{{ simulationResults.sharpeRatio.toFixed(2) }}</span>
+      </div>
+      <div class="result-item">
+        <span class="label">Max Drawdown:</span>
+        <span class="value negative">-${{ simulationResults.maxDrawdown.toFixed(2) }}</span>
+      </div>
+    </div>
+  </div>
+</div>

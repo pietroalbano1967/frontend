@@ -1,1 +1,29 @@
-/* You can add global styles to this file, and also import other style files */
+/* styles.scss - Aggiungi queste regole */
+.simulation-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 12px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  
+  &.active {
+    background: #28a745;
+    color: white;
+    animation: pulse 2s infinite;
+  }
+  
+  &.inactive {
+    background: #dc3545;
+    color: white;
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}

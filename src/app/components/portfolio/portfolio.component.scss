@@ -1,0 +1,158 @@
+// components/portfolio/portfolio.component.scss
+.portfolio-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.portfolio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  h3 {
+    margin: 0;
+    color: #2c3e50;
+  }
+}
+
+.portfolio-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 14px;
+
+  span {
+    padding: 6px 12px;
+    border-radius: 15px;
+    background: #f8f9fa;
+    font-weight: 500;
+  }
+}
+
+.positions-section,
+.history-section {
+  margin-bottom: 30px;
+}
+
+h4 {
+  margin-bottom: 15px;
+  color: #495057;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 8px;
+}
+
+.position-card,
+.trade-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-left: 4px solid #007bff;
+
+  &.long {
+    border-left-color: #28a745;
+  }
+
+  &.short {
+    border-left-color: #dc3545;
+  }
+}
+
+.position-header,
+.trade-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.symbol {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.direction {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #d4edda;
+  color: #155724;
+
+  &.short {
+    background: #f8d7da;
+    color: #721c24;
+  }
+}
+
+.pnl {
+  margin-left: auto;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.positive {
+  color: #28a745;
+}
+
+.negative {
+  color: #dc3545;
+}
+
+.position-details,
+.trade-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+
+  span:first-child {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 2px;
+  }
+
+  span:last-child {
+    font-weight: 500;
+  }
+}
+
+.no-positions,
+.no-history {
+  text-align: center;
+  padding: 30px;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.btn-sm {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  &.btn-danger {
+    background: #dc3545;
+    color: white;
+
+    &:hover {
+      background: #c82333;
+    }
+  }
+}
