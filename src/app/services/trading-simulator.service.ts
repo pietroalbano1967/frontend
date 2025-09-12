@@ -37,6 +37,7 @@ export interface SimulationResult {
 export interface MarketData {
   symbol: string;
   price: number;
+  previousPrice?: number; // AGGIUNGI QUESTA PROPRIETÀ
   timestamp: Date;
   volume?: number;
 }
@@ -77,7 +78,7 @@ export class TradingSimulatorService {
   private riskService = inject(RiskManagementService);
   private binanceApi = inject(BinanceApiService);
   private tradingDecision = inject(TradingDecisionService);
-  
+  private marketDataSubject = new BehaviorSubject<MarketData[]>([]);
   private simulationActive = new BehaviorSubject<boolean>(false);
   private simulationSpeed = new BehaviorSubject<number>(1);
   private currentEquity = new BehaviorSubject<number>(0);
@@ -109,20 +110,20 @@ export class TradingSimulatorService {
     this.currentEquity.next(this.simulationConfig.initialCapital);
   }
 
-  // Metodo per avviare la simulazione in tempo reale
-  startRealTimeSimulation(): void {
-    this.portfolioService.resetPortfolio();
-    this.currentEquity.next(this.simulationConfig.initialCapital);
-    this.simulationActive.next(true);
-    
-    this.notificationService.addNotification({
-      type: 'success',
-      title: '🚀 Simulazione Avviata',
-      message: 'La simulazione di trading è ora attiva'
-    });
-    
-    this.connectToRealData();
-  }
+  // Nel servizio TradingSimulatorService
+startRealTimeSimulation(): void {
+  this.portfolioService.resetPortfolio();
+  this.currentEquity.next(this.simulationConfig.initialCapital);
+  this.simulationActive.next(true);
+  
+  this.notificationService.addNotification({
+    type: 'success',
+    title: '🚀 Simulazione Avviata',
+    message: 'La simulazione di trading è ora attiva'
+  });
+  
+  this.connectToRealData(); // ASSICURATI CHE QUESTA LINEA CI SIA
+}
 
   // Collegamento ai dati reali
   private connectToRealData() {
@@ -148,27 +149,39 @@ export class TradingSimulatorService {
     });
   }
 
-  // Processa i dati di mercato
-  private processMarketData(ticker: MarketData) {
-    if (!this.simulationActive.value) return;
-    
-    // 1. Aggiorna prezzi nel portfolio
-    const priceMap = new Map<string, number>();
-    priceMap.set(ticker.symbol, ticker.price);
-    this.portfolioService.updatePositionPrices(priceMap);
-    
-    // 2. Aggiorna il portfolio corrente
-    this.currentPortfolio.next(this.portfolioService.getPortfolio());
-    
-    // 3. Calcola equity corrente
-    this.updateCurrentEquity();
-    
-    // 4. Verifica stop loss e take profit
-    this.checkRiskManagement(ticker.symbol, ticker.price);
-    
-    // 5. Verifica se ci sono segnali trading
-    this.checkTradingSignals(ticker);
+// Aggiungi questo metodo
+
+
+// Modifica il metodo processMarketData per emettere i dati
+private processMarketData(ticker: MarketData) {
+  if (!this.simulationActive.value) return;
+  
+  // 1. Aggiorna prezzi nel portfolio
+  const priceMap = new Map<string, number>();
+  priceMap.set(ticker.symbol, ticker.price);
+  this.portfolioService.updatePositionPrices(priceMap);
+  
+  // 2. Aggiorna i dati di mercato
+  const currentData = this.marketDataSubject.value;
+  const existingIndex = currentData.findIndex(data => data.symbol === ticker.symbol);
+  
+  if (existingIndex >= 0) {
+    currentData[existingIndex] = ticker;
+  } else {
+    currentData.push(ticker);
   }
+  
+  this.marketDataSubject.next(currentData);
+  
+  // 3. Calcola equity corrente
+  this.updateCurrentEquity();
+  
+  // 4. Verifica stop loss e take profit
+  this.checkRiskManagement(ticker.symbol, ticker.price);
+  
+  // 5. Verifica se ci sono segnali trading
+  this.checkTradingSignals(ticker);
+}
 
   // Aggiorna l'equity corrente
   private updateCurrentEquity(): void {
@@ -671,6 +684,11 @@ simulateOrder(decision: TradingDecision, currentPrice: number, quantity: number)
   private calculateAverageVolume(candles: KlineData[]): number {
     return candles.reduce((sum, candle) => sum + candle.volume, 0) / candles.length;
   }
+
+  // Aggiungi questo metodo
+getMarketData(): Observable<MarketData[]> {
+  return this.marketDataSubject.asObservable();
+}
 
   // Metodi per osservare i dati
   getKlineData(): Observable<Map<string, KlineData[]>> {

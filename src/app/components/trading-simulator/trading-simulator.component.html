@@ -10,7 +10,29 @@
 
   <!-- DASHBOARD PRINCIPALE -->
   <div class="dashboard-container">
+ <!-- Aggiungi questa sezione nel template -->
+<div class="real-time-section">
+  <h3>📊 Dati in Tempo Reale</h3>
+  <div class="market-data-container">
+    <div *ngFor="let data of marketData" class="market-data-item">
+      <span class="symbol">{{data.symbol}}</span>
+      <span class="price" 
+      [class.up]="data.previousPrice && data.price > data.previousPrice"
+      [class.down]="data.previousPrice && data.price < data.previousPrice">
+  {{data.price | currency}}
+</span>
+      <span class="volume">Vol: {{data.volume | number}}</span>
+      <span class="time">{{data.timestamp | date:'HH:mm:ss'}}</span>
+    </div>
     
+    <div *ngIf="marketData.length === 0" class="no-data">
+      <p>In attesa di dati in tempo reale...</p>
+    </div>
+  </div>
+</div>
+<!-- Le altre parti del template che usano portfolioService ora funzioneranno -->
+<!-- poiché abbiamo cambiato portfolioService da private a public -->
+
     <!-- SEZIONE SEGNALI IN TEMPO REALE -->
     <div class="signals-section">
       <h3>📡 Segnali in Tempo Reale</h3>
@@ -47,49 +69,47 @@
       </div>
     </div>
 
-    <!-- SEZIONE PORTAFOLIO -->
-    <div class="portfolio-section">
-      <h3>💰 Portafoglio</h3>
-      <div class="portfolio-info">
-        <div class="portfolio-item">
-          <span class="label">Valore Totale:</span>
-          <span class="value">{{portfolioService.getPortfolio().totalValue | currency}}</span>
-        </div>
-        
-        <div class="portfolio-item">
-          <span class="label">Liquidità:</span>
-          <span class="value">{{portfolioService.getPortfolio().cash | currency}}</span>
-        </div>
-        
-        <div class="portfolio-item">
-          <span class="label">Posizioni Aperte:</span>
-          <span class="value">{{portfolioService.currentPositions().length}}</span>
-        </div>
-      </div>
-
-      <!-- POSIZIONI APERTE -->
-      <div class="positions-container" *ngIf="portfolioService.currentPositions().length > 0">
-        <h4>Posizioni Aperte</h4>
-        <div *ngFor="let position of portfolioService.currentPositions()" class="position">
-          <div class="position-header">
-            <span class="symbol">{{position.symbol}}</span>
-            <span class="direction" [class.long]="position.direction === 'LONG'" [class.short]="position.direction === 'SHORT'">
-              {{position.direction}}
-            </span>
-          </div>
-          
-          <div class="position-details">
-            <span>Entry: {{position.entryPrice | currency}}</span>
-            <span>Current: {{position.currentPrice | currency}}</span>
-            <span [class.profit]="position.pnl > 0" [class.loss]="position.pnl < 0">
-              P&L: {{position.pnl | currency}} ({{position.pnlPercent | number:'1.2-2'}}%)
-            </span>
-          </div>
-        </div>
-      </div>
+ <!-- Correggi la sezione portfolio -->
+<div class="portfolio-section">
+  <h3>💰 Portafoglio</h3>
+  <div class="portfolio-info">
+    <div class="portfolio-item">
+      <span class="label">Valore Totale:</span>
+      <span class="value">{{portfolio.totalValue | currency}}</span>
+    </div>
+    
+    <div class="portfolio-item">
+      <span class="label">Liquidità:</span>
+      <span class="value">{{portfolio.cash | currency}}</span>
+    </div>
+    
+    <div class="portfolio-item">
+      <span class="label">Posizioni Aperte:</span>
+      <span class="value">{{currentPositions.length}}</span>
     </div>
   </div>
 
+  <!-- POSIZIONI APERTE -->
+  <div class="positions-container" *ngIf="currentPositions.length > 0">
+    <h4>Posizioni Aperte</h4>
+    <div *ngFor="let position of currentPositions" class="position">
+      <div class="position-header">
+        <span class="symbol">{{position.symbol}}</span>
+        <span class="direction" [class.long]="position.direction === 'LONG'" [class.short]="position.direction === 'SHORT'">
+          {{position.direction}}
+        </span>
+      </div>
+      
+      <div class="position-details">
+        <span>Entry: {{position.entryPrice | currency}}</span>
+        <span>Current: {{position.currentPrice | currency}}</span>
+        <span [class.profit]="position.pnl > 0" [class.loss]="position.pnl < 0">
+          P&L: {{position.pnl | currency}} ({{position.pnlPercent | number:'1.2-2'}}%)
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
   <!-- CONFIGURATION SECTION -->
   <div class="config-section">
     <h3>Configuration</h3>
@@ -167,7 +187,7 @@
           <span class="label">Total Profit:</span>
           <span class="value" [class.positive]="simulationResults.totalProfit > 0"
                 [class.negative]="simulationResults.totalProfit < 0">
-            {{ formatCurrency(simulationResults.totalProfit) }}
+           {{ simulationResults.totalProfit | currency:'EUR':'symbol':'1.2-2':'it-IT' }}
           </span>
         </div>
 
@@ -178,7 +198,7 @@
 
         <div class="result-card">
           <span class="label">Win Rate:</span>
-          <span class="value">{{ formatPercent(simulationResults.winRate) }}</span>
+          <span class="value">{{ simulationResults.winRate | percent:'1.0-2':'it-IT' }}</span>
         </div>
 
         <div class="result-card">
@@ -189,7 +209,7 @@
         <div class="result-card">
           <span class="label">Max Drawdown:</span>
           <span class="value negative">
-            {{ formatCurrency(simulationResults.maxDrawdown) }}
+           {{ simulationResults.maxDrawdown | currency:'EUR':'symbol':'1.2-2':'it-IT' }}
           </span>
         </div>
       </div>

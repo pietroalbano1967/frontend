@@ -5,7 +5,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { TradingDashboardComponent } from './components/trading-dashboard/trading-dashboard.component';
 import { TradingSimulatorComponent } from './components/trading-simulator/trading-simulator.component';
 import { NotificationCenterComponent } from './components/notification-center/notification-center.component';
-
+import { CurrencyPipe, PercentPipe } from '@angular/common';
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -14,7 +14,9 @@ import { NotificationCenterComponent } from './components/notification-center/no
     DashboardComponent,
     TradingDashboardComponent,
     TradingSimulatorComponent,
-    NotificationCenterComponent
+    NotificationCenterComponent,
+    CurrencyPipe,
+    PercentPipe
   ],
   template: `
     <div class="app-container">

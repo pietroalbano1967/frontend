@@ -1,62 +1,80 @@
 // components/trading-simulator/trading-simulator.component.ts
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TradingSimulatorService, SimulationConfig, TradingSignal} from '../../services/trading-simulator.service';
+import { TradingSimulatorService, SimulationConfig, TradingSignal, MarketData } from '../../services/trading-simulator.service';
 import { PortfolioService } from '../../services/portfolio.service';
 import { TradingDecisionService } from '../../services/trading-decision.service';
-
+import { Subscription } from 'rxjs';
+import { CurrencyPipe, PercentPipe } from '@angular/common';
 @Component({
   selector: 'app-trading-simulator',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CurrencyPipe, PercentPipe],
   templateUrl: './trading-simulator.component.html',
   styleUrls: ['./trading-simulator.component.scss']
 })
-export class TradingSimulatorComponent implements OnInit {
-  public simulator = inject(TradingSimulatorService);
+export class TradingSimulatorComponent implements OnInit, OnDestroy {
+   
   public portfolioService = inject(PortfolioService);
-  public tradingService = inject(TradingDecisionService);
-  portfolio: any = {};
+  public simulator = inject(TradingSimulatorService);
+  private tradingService = inject(TradingDecisionService);
+  
+  // SOSTITUISCI 'subscriptions' CON 'dataSubscription' E AGGIUNGI LE ALTRE
+  private simulationSubscription!: Subscription;
+  private signalsSubscription!: Subscription;
+  private marketDataSubscription!: Subscription;
+  private portfolioSubscription!: Subscription;
+
   simulationActive = false;
   config: SimulationConfig = this.simulator.getConfig();
   simulationResults: any = null;
   isLoading = false;
   selectedSymbol: string = 'BTCUSDT';
   tradingSignals: TradingSignal[] = [];
+  marketData: MarketData[] = [];
+  portfolio: any = {};
+  currentPositions: any[] = [];
+
   ngOnInit() {
-    this.simulator.isSimulationActive().subscribe(active => {
+    // Sottoscrizione allo stato della simulazione
+    this.simulationSubscription = this.simulator.isSimulationActive().subscribe(active => {
       this.simulationActive = active;
+      console.log('Simulation active:', active);
     });
 
-    this.simulator.getTradingSignals().subscribe(signals => {
+    // Sottoscrizione ai segnali di trading
+    this.signalsSubscription = this.simulator.getTradingSignals().subscribe(signals => {
       this.tradingSignals = signals;
+      console.log('New trading signals:', signals);
     });
 
-    // Aggiorna il portfolio quando cambia
-    this.portfolioService.getPortfolioUpdated().subscribe(() => {
-      this.portfolio = this.portfolioService.getPortfolio();
+    // Sottoscrizione ai dati di mercato
+    this.marketDataSubscription = this.simulator.getMarketData().subscribe(data => {
+      this.marketData = data;
+      console.log('Market data updated:', data);
+    });
+
+    // Inizializza il portfolio e le posizioni
+    this.updatePortfolioData();
+
+    // Sottoscrizione agli aggiornamenti del portfolio
+    this.portfolioSubscription = this.portfolioService.getPortfolioUpdated().subscribe(() => {
+      this.updatePortfolioData();
     });
   }
-    get currentPositions() {
-    return this.portfolioService.currentPositions();
+
+  ngOnDestroy() {
+    // Cancella tutte le sottoscrizioni
+    if (this.simulationSubscription) this.simulationSubscription.unsubscribe();
+    if (this.signalsSubscription) this.signalsSubscription.unsubscribe();
+    if (this.marketDataSubscription) this.marketDataSubscription.unsubscribe();
+    if (this.portfolioSubscription) this.portfolioSubscription.unsubscribe();
   }
 
-    formatCurrency(value: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
-  }
-
-  formatPercent(value: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'percent',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value / 100);
+  private updatePortfolioData() {
+    this.portfolio = this.portfolioService.getPortfolio();
+    this.currentPositions = this.portfolioService.currentPositions();
   }
 
   toggleSimulation() {
@@ -70,6 +88,8 @@ export class TradingSimulatorComponent implements OnInit {
   updateConfig() {
     this.simulator.updateConfig(this.config);
   }
+
+  
 
   resetPortfolio() {
     this.portfolioService.resetPortfolio();
@@ -158,10 +178,5 @@ export class TradingSimulatorComponent implements OnInit {
     a.download = 'trading-simulation-results.json';
     a.click();
     window.URL.revokeObjectURL(url);
-  }
-
-  // Metodo per avviare il monitoraggio candele
-  startCandleMonitoring() {
-    this.simulator.startCandleMonitoring([this.selectedSymbol]);
   }
 }
