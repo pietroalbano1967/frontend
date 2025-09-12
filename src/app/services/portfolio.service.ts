@@ -1,7 +1,8 @@
 // services/portfolio.service.ts
 import { Injectable, signal, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformServer } from '@angular/common';
-
+import { INITIAL_CONFIG } from '@angular/platform-server';
+import { Subject, Observable } from 'rxjs';
 export interface Position {
   symbol: string;
   direction: 'LONG' | 'SHORT';
@@ -37,7 +38,7 @@ export interface Portfolio {
 @Injectable({ providedIn: 'root' })
 export class PortfolioService {
   private initialCash = 10000;
-  
+  private portfolioUpdated = new Subject<void>();
   // Segnali per lo stato reattivo
   portfolio = signal<Portfolio>({
     cash: this.initialCash,
@@ -55,7 +56,10 @@ export class PortfolioService {
     }
   }
 
-
+  initiliazePortfolio(initialCash: number) {
+    this.initialCash = initialCash;
+    this.resetPortfolio();
+  }
   exportPortfolioData() {
     throw new Error('Method not implemented.');
   }
@@ -64,17 +68,30 @@ export class PortfolioService {
   getPortfolio(): Portfolio {
     return this.portfolio();
   }
-
+  getPortfolioUpdated(): Observable<void> {
+  return this.portfolioUpdated.asObservable();
+  }
   // Ottiene le posizioni correnti
   currentPositions(): Position[] {
     return this.positions();
   }
+  
 
   // Ottiene la cronologia dei trade
   getTradeHistory(): Trade[] {
     return this.tradeHistory();
   }
+  addTrade(trade: Trade): void {
+    this.tradeHistory.update(history => [trade, ...history]);
+  }
+  
+  getportfolioSnapshot(): Portfolio {
+    return this.portfolio();
+  } 
 
+  getTradeHistorySnapshot(): Trade[] {
+    return this.tradeHistory();
+  } 
   // Apre una nuova posizione
   openPosition(
     symbol: string,

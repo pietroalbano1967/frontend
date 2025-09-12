@@ -1,90 +1,208 @@
 <!-- components/trading-simulator/trading-simulator.component.html -->
 <div class="trading-simulator">
   <div class="simulator-header">
-    <h3>🎮 Trading Simulator</h3>
-    <div class="simulator-status" [class.active]="simulationActive">
-      {{ simulationActive ? 'SIMULAZIONE ATTIVA' : 'SIMULAZIONE FERMA' }}
-    </div>
+    <h2>📈 Trading Simulator</h2>
+    <button class="btn-toggle" (click)="toggleSimulation()" 
+            [class.active]="simulationActive">
+      {{ simulationActive ? '⏹️ Stop' : '🚀 Start' }} Simulation
+    </button>
   </div>
 
-  <div class="simulator-controls">
-    <button class="btn btn-primary" (click)="toggleSimulation()">
-      {{ simulationActive ? '⏹️ Stop Simulation' : '▶️ Start Simulation' }}
-    </button>
+  <!-- DASHBOARD PRINCIPALE -->
+  <div class="dashboard-container">
     
-    <button class="btn btn-secondary" (click)="resetPortfolio()">
-      🔄 Reset Portfolio
-    </button>
+    <!-- SEZIONE SEGNALI IN TEMPO REALE -->
+    <div class="signals-section">
+      <h3>📡 Segnali in Tempo Reale</h3>
+      <div class="signals-container">
+        <div *ngFor="let signal of tradingSignals" 
+             class="signal" 
+             [class.buy]="signal.action === 'BUY'"
+             [class.sell]="signal.action === 'SELL'">
+          
+          <div class="signal-header">
+            <span class="symbol">{{signal.symbol}}</span>
+            <span class="action" [class.buy]="signal.action === 'BUY'" [class.sell]="signal.action === 'SELL'">
+              {{signal.action === 'BUY' ? '🟢 BUY' : '🔴 SELL'}}
+            </span>
+          </div>
 
-    <button class="btn btn-secondary" (click)="runBacktest()" [disabled]="isLoading">
-      {{ isLoading ? 'Backtesting...' : '📊 Run Backtest' }}
-    </button>
+          <div class="signal-details">
+            <span class="price">{{signal.price | currency}}</span>
+            <span class="confidence">({{signal.confidence | percent}})</span>
+          </div>
 
-    <button class="btn btn-secondary" (click)="exportResults()">
-      💾 Export Results
-    </button>
+          <div class="signal-reason">
+            {{signal.reason}}
+          </div>
+
+          <div class="signal-time">
+            {{signal.timestamp | date:'HH:mm:ss'}}
+          </div>
+        </div>
+
+        <div *ngIf="tradingSignals.length === 0" class="no-signals">
+          <p>Nessun segnale disponibile</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEZIONE PORTAFOLIO -->
+    <div class="portfolio-section">
+      <h3>💰 Portafoglio</h3>
+      <div class="portfolio-info">
+        <div class="portfolio-item">
+          <span class="label">Valore Totale:</span>
+          <span class="value">{{portfolioService.getPortfolio().totalValue | currency}}</span>
+        </div>
+        
+        <div class="portfolio-item">
+          <span class="label">Liquidità:</span>
+          <span class="value">{{portfolioService.getPortfolio().cash | currency}}</span>
+        </div>
+        
+        <div class="portfolio-item">
+          <span class="label">Posizioni Aperte:</span>
+          <span class="value">{{portfolioService.currentPositions().length}}</span>
+        </div>
+      </div>
+
+      <!-- POSIZIONI APERTE -->
+      <div class="positions-container" *ngIf="portfolioService.currentPositions().length > 0">
+        <h4>Posizioni Aperte</h4>
+        <div *ngFor="let position of portfolioService.currentPositions()" class="position">
+          <div class="position-header">
+            <span class="symbol">{{position.symbol}}</span>
+            <span class="direction" [class.long]="position.direction === 'LONG'" [class.short]="position.direction === 'SHORT'">
+              {{position.direction}}
+            </span>
+          </div>
+          
+          <div class="position-details">
+            <span>Entry: {{position.entryPrice | currency}}</span>
+            <span>Current: {{position.currentPrice | currency}}</span>
+            <span [class.profit]="position.pnl > 0" [class.loss]="position.pnl < 0">
+              P&L: {{position.pnl | currency}} ({{position.pnlPercent | number:'1.2-2'}}%)
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- CONFIGURATION SECTION -->
   <div class="config-section">
-    <h4>Configuration</h4>
+    <h3>Configuration</h3>
+    
     <div class="config-grid">
-      <div class="config-item">
+      <div class="config-group">
         <label>Initial Capital:</label>
-        <input type="number" [(ngModel)]="config.initialCapital" (change)="updateConfig()">
+        <input type="number" [(ngModel)]="config.initialCapital" 
+               (change)="updateConfig()" step="1000">
       </div>
-      <div class="config-item">
-        <label>Risk per Trade (%):</label>
-        <input type="number" [(ngModel)]="config.riskPerTrade" (change)="updateConfig()" step="0.01" min="0.01" max="0.1">
-      </div>
-      <div class="config-item">
-        <label>Max Positions:</label>
-        <input type="number" [(ngModel)]="config.maxPositions" (change)="updateConfig()" min="1" max="10">
-      </div>
-      <div class="config-item">
+
+      <div class="config-group">
         <label>Commission (%):</label>
-        <input type="number" [(ngModel)]="config.commission" (change)="updateConfig()" step="0.0001" min="0" max="0.01">
+        <input type="number" [(ngModel)]="config.commission" 
+               (change)="updateConfig()" step="0.001" min="0">
       </div>
-      <div class="config-item">
+
+      <div class="config-group">
+        <label>Risk per Trade (%):</label>
+        <input type="number" [(ngModel)]="config.riskPerTrade" 
+               (change)="updateConfig()" step="0.01" min="0" max="100">
+      </div>
+
+      <div class="config-group">
         <label>Slippage (%):</label>
-        <input type="number" [(ngModel)]="config.slippage" (change)="updateConfig()" step="0.0001" min="0" max="0.01">
+        <input type="number" [(ngModel)]="config.slippage" 
+               (change)="updateConfig()" step="0.001" min="0">
       </div>
-      <div class="config-item">
+
+      <div class="config-group">
+        <label>Max Positions:</label>
+        <input type="number" [(ngModel)]="config.maxPositions" 
+               (change)="updateConfig()" min="1" max="20">
+      </div>
+
+      <div class="config-group">
         <label>Stop Loss (%):</label>
-        <input type="number" [(ngModel)]="config.stopLossPercent" (change)="updateConfig()" step="0.01" min="0.01" max="0.1">
+        <input type="number" [(ngModel)]="config.stopLossPercent" 
+               (change)="updateConfig()" step="0.01" min="0" max="50">
       </div>
-      <div class="config-item">
+
+      <div class="config-group">
         <label>Take Profit (%):</label>
-        <input type="number" [(ngModel)]="config.takeProfitPercent" (change)="updateConfig()" step="0.01" min="0.01" max="0.1">
+        <input type="number" [(ngModel)]="config.takeProfitPercent" 
+               (change)="updateConfig()" step="0.01" min="0" max="100">
       </div>
     </div>
   </div>
 
-  <div class="results-section" *ngIf="simulationResults">
-    <h4>Backtest Results</h4>
-    <div class="results-grid">
-      <div class="result-item">
-        <span class="label">Total Profit:</span>
-        <span class="value" [class.positive]="simulationResults.totalProfit > 0" 
-              [class.negative]="simulationResults.totalProfit < 0">
-          ${{ simulationResults.totalProfit.toFixed(2) }}
-        </span>
-      </div>
-      <div class="result-item">
-        <span class="label">Total Trades:</span>
-        <span class="value">{{ simulationResults.totalTrades }}</span>
-      </div>
-      <div class="result-item">
-        <span class="label">Win Rate:</span>
-        <span class="value">{{ (simulationResults.winRate * 100).toFixed(1) }}%</span>
-      </div>
-      <div class="result-item">
-        <span class="label">Sharpe Ratio:</span>
-        <span class="value">{{ simulationResults.sharpeRatio.toFixed(2) }}</span>
-      </div>
-      <div class="result-item">
-        <span class="label">Max Drawdown:</span>
-        <span class="value negative">-${{ simulationResults.maxDrawdown.toFixed(2) }}</span>
-      </div>
+  <!-- BACKTEST SECTION -->
+  <div class="backtest-section">
+    <h3>Backtest</h3>
+    
+    <div class="backtest-controls">
+      <select [(ngModel)]="selectedSymbol">
+        <option value="BTCUSDT">BTC/USDT</option>
+        <option value="ETHUSDT">ETH/USDT</option>
+        <option value="BNBUSDT">BNB/USDT</option>
+        <option value="SOLUSDT">SOL/USDT</option>
+      </select>
+      
+      <button (click)="runBacktest()" [disabled]="isLoading">
+        {{ isLoading ? 'Running...' : 'Run Backtest' }}
+      </button>
+      
+      <button (click)="resetPortfolio()">Reset Portfolio</button>
     </div>
+
+    <!-- RESULTS -->
+    <div *ngIf="simulationResults" class="results-section">
+      <h4>Backtest Results</h4>
+      
+      <div class="results-grid">
+        <div class="result-card">
+          <span class="label">Total Profit:</span>
+          <span class="value" [class.positive]="simulationResults.totalProfit > 0"
+                [class.negative]="simulationResults.totalProfit < 0">
+            {{ formatCurrency(simulationResults.totalProfit) }}
+          </span>
+        </div>
+
+        <div class="result-card">
+          <span class="label">Total Trades:</span>
+          <span class="value">{{ simulationResults.totalTrades }}</span>
+        </div>
+
+        <div class="result-card">
+          <span class="label">Win Rate:</span>
+          <span class="value">{{ formatPercent(simulationResults.winRate) }}</span>
+        </div>
+
+        <div class="result-card">
+          <span class="label">Sharpe Ratio:</span>
+          <span class="value">{{ simulationResults.sharpeRatio?.toFixed(2) }}</span>
+        </div>
+
+        <div class="result-card">
+          <span class="label">Max Drawdown:</span>
+          <span class="value negative">
+            {{ formatCurrency(simulationResults.maxDrawdown) }}
+          </span>
+        </div>
+      </div>
+
+      <button class="btn-export" (click)="exportResults()">
+        📊 Export Results
+      </button>
+    </div>
+  </div>
+ 
+  <!-- SIMULATION STATUS -->
+  <div class="status-section" [class.active]="simulationActive">
+    <div class="status-indicator"></div>
+    <span>Simulation: {{ simulationActive ? 'ACTIVE' : 'INACTIVE' }}</span>
   </div>
 </div>
