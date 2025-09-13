@@ -1,4 +1,13 @@
-import { Component, OnInit, OnDestroy, signal, inject, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+  inject,
+  Inject,
+  PLATFORM_ID,
+  ChangeDetectorRef
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -58,7 +67,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showAnalyticsModal = false;
   showAlertsModal = false;
   modalSymbol = '';
-  
+
   private wsSubscription: Subscription | null = null;
   private subscriptions: Subscription[] = [];
   private reconnectAttempts = 0;
@@ -72,6 +81,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.refresh();
     this.requestNotificationPermission();
+    if (this.isBrowser) {
+      this.startWebSocket();
+    }
   }
 
   ngOnDestroy() {
@@ -88,8 +100,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.notificationService.requestNotificationPermission();
     }
   }
-
-  
 
   chartSymbols(): string[] {
     return this.selectedSymbolsArr().slice(0, MAX_CHARTS);
@@ -115,50 +125,55 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private startWebSocket() {
-  const wsList = this.wsSymbols();
-  if (wsList.length === 0) {
-    console.warn('Nessun simbolo valido selezionato');
-    return;
-  }
+    if (!this.isBrowser) return;
 
-  console.log('Starting WebSocket for symbols:', wsList);
+    const wsList = this.wsSymbols();
+    if (wsList.length === 0) {
+      console.warn('Nessun simbolo valido selezionato');
+      return;
+    }
+
+    console.log('▶️ Starting WebSocket for symbols:', wsList);
 
     this.stop();
     this.isConnecting = true;
 
-    const sub = this.api.connectWS(wsList.join(','), 'miniTicker,kline_1m').subscribe({
-      next: (msg: WebSocketMessage) => {
-        this.wsOpen = true;
-        this.isConnecting = false;
-        this.reconnectAttempts = 0;
-        this.messagesReceived++;
-        this.lastUpdate = new Date();
-        this.lastMsg = msg;
+    this.wsSubscription = this.api
+      .connectWS(wsList.join(','), 'miniTicker')
+      .subscribe({
+        next: (msg: WebSocketMessage) => {
+          this.wsOpen = true;
+          this.isConnecting = false;
+          this.reconnectAttempts = 0;
+          this.messagesReceived++;
+          this.lastUpdate = new Date();
+          this.lastMsg = msg;
 
-        if (msg?.type === 'miniTicker') {
-          this.updateTickerData(msg.payload as MiniTicker);
-        }
-        this.cdr.markForCheck();
-      },
-      error: (err: Error) => {
-        console.error('WebSocket error:', err);
-        this.isConnecting = false;
-        this.wsOpen = false;
-        
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          this.reconnectTimer = setTimeout(() => this.startWebSocket(), 2000 * this.reconnectAttempts);
-        }
-        this.cdr.markForCheck();
-      },
-      complete: () => {
-        this.isConnecting = false;
-        this.wsOpen = false;
-        this.cdr.markForCheck();
-      }
-    });
+          if (msg?.type === 'miniTicker') {
+            this.updateTickerData(msg.payload as MiniTicker);
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err: Error) => {
+          console.error('❌ WebSocket error:', err);
+          this.isConnecting = false;
+          this.wsOpen = false;
 
-    this.subscriptions.push(sub);
+          if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            this.reconnectTimer = setTimeout(
+              () => this.startWebSocket(),
+              2000 * this.reconnectAttempts
+            );
+          }
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.isConnecting = false;
+          this.wsOpen = false;
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   stop() {
@@ -175,6 +190,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   refresh() {
+    if (!this.isBrowser) return;
+
     const list = this.wsSymbols();
     if (list.length === 0) {
       this.miniTickers.set([]);
@@ -202,49 +219,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private updateTickerData(newData: MiniTicker) {
-  console.log('Update ticker data:', newData.symbol, newData.last_price);
-  
-  const allowed = new Set(this.selectedSymbolsArr());
-  if (!allowed.has(newData.symbol)) {
-    console.log('Symbol not in allowed list:', newData.symbol);
-    return;
+    const allowed = new Set(this.selectedSymbolsArr());
+    if (!allowed.has(newData.symbol)) return;
+
+    const current = this.miniTickers();
+    const idx = current.findIndex(t => t.symbol === newData.symbol);
+
+    if (idx >= 0) {
+      const copy = [...current];
+      copy[idx] = { ...copy[idx], ...newData };
+      this.miniTickers.set(copy);
+    } else {
+      this.miniTickers.set([...current, newData]);
+    }
+
+    this.checkPriceAlerts(newData);
+    this.analyticsService.updatePrice(newData.symbol, newData.last_price);
+
+    if (this.chartSymbols().includes(newData.symbol)) {
+      this.updateChartData(newData);
+    }
+
+    this.cdr.markForCheck();
   }
-
-  const current = this.miniTickers();
-  const idx = current.findIndex(t => t.symbol === newData.symbol);
-
-  if (idx >= 0) {
-    const copy = [...current];
-    copy[idx] = { ...copy[idx], ...newData };
-    this.miniTickers.set(copy);
-  } else {
-    this.miniTickers.set([...current, newData]);
-  }
-
-  // AGGIUNGI QUESTA RIGA: Controlla gli alert per questo simbolo
-  this.checkPriceAlerts(newData);
-
-  // Aggiorna analytics
-  this.analyticsService.updatePrice(newData.symbol, newData.last_price);
-
-  const chartSet = new Set(this.chartSymbols());
-  if (chartSet.has(newData.symbol)) {
-    this.updateChartData(newData);
-  }
-
-  this.cdr.markForCheck();
-}
 
   private updateChartData(ticker: MiniTicker) {
     const now = new Date();
     const timeLabel = now.toLocaleTimeString();
 
     const labels = this.chartLabels();
-    this.chartLabels.set(labels.length >= 50 ? [...labels.slice(1), timeLabel] : [...labels, timeLabel]);
+    this.chartLabels.set(
+      labels.length >= 50 ? [...labels.slice(1), timeLabel] : [...labels, timeLabel]
+    );
 
     const hist = { ...this.priceHistory() };
     const arr = hist[ticker.symbol] ?? [];
-    hist[ticker.symbol] = arr.length >= 50 ? [...arr.slice(1), ticker.last_price] : [...arr, ticker.last_price];
+    hist[ticker.symbol] =
+      arr.length >= 50 ? [...arr.slice(1), ticker.last_price] : [...arr, ticker.last_price];
     this.priceHistory.set(hist);
   }
 
@@ -253,30 +264,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private checkPriceAlerts(ticker: MiniTicker) {
-  console.log('Checking alerts for:', ticker.symbol, 'price:', ticker.last_price);
-  
-  // Usa getAlertsSnapshot() invece di getAlerts()()
-  const triggeredAlerts = this.alertService.checkAlerts(ticker.symbol, ticker.last_price);
-  console.log('Triggered alerts:', triggeredAlerts);
-  
-  triggeredAlerts.forEach(alert => {
-    this.showAlertNotification(alert, ticker.last_price);
-  });
-}
-
-
-testAlerts() {
-  // Test manuale degli alert
-  const testSymbol = this.selectedSymbolsArr()[0];
-  if (testSymbol) {
-    const testPrice = this.miniTickers().find(t => t.symbol === testSymbol)?.last_price;
-    if (testPrice) {
-      console.log('Testing alerts for:', testSymbol, testPrice);
-      const triggered = this.alertService.checkAlerts(testSymbol, testPrice);
-      console.log('Test result:', triggered);
-    }
+    const triggeredAlerts = this.alertService.checkAlerts(
+      ticker.symbol,
+      ticker.last_price
+    );
+    triggeredAlerts.forEach(alert => {
+      this.showAlertNotification(alert, ticker.last_price);
+    });
   }
-}
+
   private showAlertNotification(alert: any, currentPrice: number) {
     if (!this.isBrowser) return;
 
@@ -307,29 +303,37 @@ Prezzo attuale: $${currentPrice}`;
 
   getPriceChangePercent(ticker: MiniTicker): number {
     const midPrice = (ticker.high_price + ticker.low_price) / 2;
-    return midPrice !== 0 ? ((ticker.last_price - midPrice) / midPrice) * 100 : 0;
+    return midPrice !== 0
+      ? ((ticker.last_price - midPrice) / midPrice) * 100
+      : 0;
   }
-// Metodo per toggle della modalità
+
   toggleTradingMode() {
     this.isSimulationMode = !this.isSimulationMode;
     this.notificationService.addNotification({
       type: 'info',
       title: `🔄 Modalità ${this.isSimulationMode ? 'Simulazione' : 'Reale'}`,
-      message: `Trading in modalità ${this.isSimulationMode ? 'simulazione' : 'reale'} attiva`
+      message: `Trading in modalità ${
+        this.isSimulationMode ? 'simulazione' : 'reale'
+      } attiva`
     });
   }
 
   private playAlertSound() {
     if (!this.isBrowser) return;
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
 
       const gainNode = audioContext.createGain();
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + 0.3
+      );
 
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
@@ -346,28 +350,31 @@ Prezzo attuale: $${currentPrice}`;
   }
 
   onSymbolsChange(symbolsString: string) {
-    const valid = symbolsString.split(',')
+    const valid = symbolsString
+      .split(',')
       .map(s => s.trim().toLowerCase())
       .filter(Boolean);
-    
+
     this.symbolsInput = valid.join(',');
-    
+
     if (valid.length === 0) {
       this.onClearAll();
       return;
     }
-    
+
     if (this.wsOpen) {
       this.api.updateWSSymbols(valid).subscribe(success => {
         if (!success) {
+          console.warn('⚠️ updateWSSymbols fallito, riconnessione…');
           this.stop();
           this.startWebSocket();
         }
       });
     } else {
       this.refresh();
+      this.startWebSocket();
     }
-    
+
     const allowed = new Set(valid);
     this.miniTickers.set(this.miniTickers().filter(t => allowed.has(t.symbol)));
   }
@@ -393,12 +400,10 @@ Prezzo attuale: $${currentPrice}`;
   }
 
   private selectedSymbolsArr(): string[] {
-  const symbols = (this.symbolsInput || '')
-    .split(',')
-    .map(s => s.trim().toLowerCase())
-    .filter(Boolean);
-  
-  console.log('Selected symbols:', symbols);
-  return symbols;
-}
+    const symbols = (this.symbolsInput || '')
+      .split(',')
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean);
+    return symbols;
+  }
 }

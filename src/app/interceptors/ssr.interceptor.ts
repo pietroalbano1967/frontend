@@ -7,13 +7,16 @@ import { of } from 'rxjs';
 export const ssrInterceptor: HttpInterceptorFn = (req, next) => {
   const platformId = inject(PLATFORM_ID);
   
-  // Blocca tutte le chiamate HTTP durante SSR
-  if (isPlatformServer(platformId)) {
-    console.log('🚫 Blocking HTTP request during SSR:', req.url);
-    // Restituisce un observable vuoto invece di fare la richiesta
+if (isPlatformServer(platformId)) {
+  const url = req.url || '';
+  const isBinance = url.includes('api.binance.com');
+  if (!isBinance) {
+    console.log('🚫 Blocking HTTP during SSR:', url);
     return of() as any;
   }
-  
+}
+return next(req);
+
   // Nel browser, procedi normalmente
   return next(req);
 };

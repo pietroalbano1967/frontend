@@ -1,22 +1,19 @@
-// app.component.ts - VERSIONE CORRETTA
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { TradingDashboardComponent } from './components/trading-dashboard/trading-dashboard.component';
 import { TradingSimulatorComponent } from './components/trading-simulator/trading-simulator.component';
 import { NotificationCenterComponent } from './components/notification-center/notification-center.component';
-import { CurrencyPipe, PercentPipe } from '@angular/common';
+
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
-    CommonModule,
+    CommonModule, // ✅ Include già CurrencyPipe e PercentPipe
     DashboardComponent,
     TradingDashboardComponent,
     TradingSimulatorComponent,
-    NotificationCenterComponent,
-    CurrencyPipe,
-    PercentPipe
+    NotificationCenterComponent
   ],
   template: `
     <div class="app-container">

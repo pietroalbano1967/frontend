@@ -2,8 +2,9 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PortfolioService, Portfolio, Trade, Position } from '../../services/portfolio.service';
+import { PortfolioService, Portfolio } from '../../services/portfolio.service';
 import { TradingSimulatorService } from '../../services/trading-simulator.service';
+import { Trade, Position } from '../../types/binance.types';
 
 @Component({
   selector: 'app-portfolio',
@@ -14,27 +15,35 @@ import { TradingSimulatorService } from '../../services/trading-simulator.servic
 })
 export class PortfolioComponent implements OnInit {
   private portfolioService = inject(PortfolioService);
-  private tradingSimulator = inject(TradingSimulatorService);
-  
-  portfolio = signal<Portfolio>(this.portfolioService.getPortfolio());
-  currentPositions = signal<Position[]>(this.portfolioService.currentPositions());
-  tradeHistory = signal<Trade[]>(this.portfolioService.getTradeHistory());
+  private simulator = inject(TradingSimulatorService);
 
-  ngOnInit() {
-    console.log('Portfolio component initialized');
+  portfolio = signal<Portfolio>({ cash: 0, equity: 0, totalValue: 0 });
+  currentPositions = signal<Position[]>([]);
+  tradeHistory = signal<Trade[]>([]);
+
+  ngOnInit(): void {
+    this.loadPortfolioData();
   }
 
-  async closePosition(position: Position) {
+  loadPortfolioData(): void {
+    this.portfolio.set(this.portfolioService.getPortfolio());
+    this.currentPositions.set(this.portfolioService.currentPositions());
+    this.tradeHistory.set(this.portfolioService.getTradeHistory());
+  }
+
+  async closePosition(position: Position): Promise<void> {
     try {
-      const result = await this.tradingSimulator.closePositionWithSimulator(position, position.currentPrice);
+      const result = await this.simulator.closePositionWithSimulator(
+        position.symbol, 
+        position.currentPrice
+      );
       
-      if (result.success) {
-        this.portfolioService.closePosition(position.symbol, result.closedPrice, result.pnl);
-        
-        // Aggiorna i dati dopo la chiusura
-        this.portfolio.set(this.portfolioService.getPortfolio());
-        this.currentPositions.set(this.portfolioService.currentPositions());
-        this.tradeHistory.set(this.portfolioService.getTradeHistory());
+      // ✅ Ora 'result' è boolean, non void
+      if (result) {
+        this.portfolioService.closePosition(position.symbol, position.currentPrice);
+        this.loadPortfolioData();
+      } else {
+        console.warn('Failed to close position in simulator');
       }
     } catch (error) {
       console.error('Error closing position:', error);

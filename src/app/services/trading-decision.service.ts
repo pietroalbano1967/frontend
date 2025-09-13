@@ -209,4 +209,47 @@ export class TradingDecisionService {
     if (decision.confidence > 0.6 && decision.riskRewardRatio > 1.5) return 'MEDIUM';
     return 'LOW';
   }
+
+ 
+// In trading-decision.service.ts
+async generateTradingSignal(symbol: string, price: number): Promise<TradingSignal> {
+  const analysis = this.analyticsService.getAnalysis(symbol);
+  const signals = await this.generateSignals(symbol, analysis);
+  
+  // Calcola il segnale basato sui segnali generati
+  const buySignals = signals.filter(s => s.action === 'BUY');
+  const sellSignals = signals.filter(s => s.action === 'SELL');
+  
+  if (buySignals.length > sellSignals.length) {
+    return {
+      symbol,
+      action: 'BUY',
+      confidence: buySignals.reduce((sum, s) => sum + s.confidence, 0) / buySignals.length,
+      price,
+      reason: 'Segnale di acquisto basato su analisi',
+      timestamp: new Date(),
+      indicators: {}
+    };
+  } else if (sellSignals.length > buySignals.length) {
+    return {
+      symbol,
+      action: 'SELL',
+      confidence: sellSignals.reduce((sum, s) => sum + s.confidence, 0) / sellSignals.length,
+      price,
+      reason: 'Segnale di vendita basato su analisi',
+      timestamp: new Date(),
+      indicators: {}
+    };
+  }
+  
+  return {
+    symbol,
+    action: 'HOLD',
+    confidence: 0.5,
+    price,
+    reason: 'Nessun segnale chiaro',
+    timestamp: new Date(),
+    indicators: {}
+  };
+}
 }
